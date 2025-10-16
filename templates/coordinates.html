@@ -1,0 +1,2340 @@
+{% extends "base.html" %}
+
+{% block title %}3D Coordinates - NuGenRDKit{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex items-center space-x-3 mb-4">
+            <div class="flex items-center justify-center w-12 h-12 bg-cyan-100 rounded-lg">
+                <i data-lucide="box" class="w-6 h-6 text-cyan-600"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">3D Coordinates</h1>
+                <p class="text-gray-600">Generate 2D depictions and 3D molecular conformations</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Input Section -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                    <i data-lucide="settings" class="w-5 h-5 mr-2"></i>
+                    Coordinate Generation
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="coordinate-input" class="block text-sm font-medium text-gray-700 mb-2">
+                            SMILES String
+                        </label>
+                        <input type="text" 
+                               id="coordinate-input" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                               placeholder="e.g., CCO" 
+                               value="CCO">
+                    </div>
+                    
+                    <div>
+                        <label for="coordinate-type" class="block text-sm font-medium text-gray-700 mb-2">
+                            Generation Type
+                        </label>
+                        <select id="coordinate-type"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+                            <optgroup label="Basic Generation">
+                                <option value="2d">2D Coordinates</option>
+                                <option value="3d">3D Conformer</option>
+                                <option value="optimize">3D Optimized</option>
+                                <option value="multiple">Multiple Conformers</option>
+                            </optgroup>
+                            <optgroup label="Advanced Features">
+                                <option value="o3a">O3A Alignment (Shape-based)</option>
+                                <option value="constrained">Constrained Embedding</option>
+                                <option value="geometry">Geometry Transforms</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div id="conformer-params" class="space-y-4" style="display: none;">
+                        <div>
+                            <label for="num-conformers" class="block text-sm font-medium text-gray-700 mb-1">
+                                Number of Conformers
+                            </label>
+                            <input type="number" 
+                                   id="num-conformers" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                                   value="10" min="1" max="100">
+                        </div>
+                        
+                        <div>
+                            <label for="random-seed" class="block text-sm font-medium text-gray-700 mb-1">
+                                Random Seed (optional)
+                            </label>
+                            <input type="number" 
+                                   id="random-seed" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                                   placeholder="42">
+                        </div>
+                        
+                        <div>
+                            <label for="energy-window" class="block text-sm font-medium text-gray-700 mb-1">
+                                Energy Window (kcal/mol)
+                            </label>
+                            <input type="number" 
+                                   id="energy-window" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                                   value="10" min="1" max="50" step="0.1">
+                        </div>
+                    </div>
+                    
+                    <div id="optimization-params" class="space-y-4" style="display: none;">
+                        <div>
+                            <label for="force-field" class="block text-sm font-medium text-gray-700 mb-1">
+                                Force Field
+                            </label>
+                            <select id="force-field" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+                                <option value="UFF">UFF (Universal Force Field)</option>
+                                <option value="MMFF94">MMFF94</option>
+                                <option value="MMFF94s">MMFF94s</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="max-iters" class="block text-sm font-medium text-gray-700 mb-1">
+                                Max Iterations
+                            </label>
+                            <input type="number" 
+                                   id="max-iters" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                                   value="500" min="10" max="2000">
+                        </div>
+                    </div>
+
+                    <!-- O3A Alignment Parameters -->
+                    <div id="o3a-params" class="space-y-4" style="display: none;">
+                        <div>
+                            <label for="o3a-probe-smiles" class="block text-sm font-medium text-gray-700 mb-1">
+                                Probe Molecule SMILES
+                            </label>
+                            <input type="text"
+                                   id="o3a-probe-smiles"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   placeholder="e.g., CC(C)Cc1ccc(cc1)C(C)C(=O)O">
+                        </div>
+
+                        <div>
+                            <label for="o3a-reference-smiles" class="block text-sm font-medium text-gray-700 mb-1">
+                                Reference Molecule SMILES
+                            </label>
+                            <input type="text"
+                                   id="o3a-reference-smiles"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   placeholder="e.g., CC(=O)OC1=CC=CC=C1C(=O)O">
+                        </div>
+
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="o3a-use-crippen" class="mr-2">
+                                <span class="text-sm text-gray-700">Use Crippen O3A (Atom Types)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Constrained Embedding Parameters -->
+                    <div id="constrained-params" class="space-y-4" style="display: none;">
+                        <div>
+                            <label for="constrained-smiles" class="block text-sm font-medium text-gray-700 mb-1">
+                                Molecule SMILES
+                            </label>
+                            <input type="text"
+                                   id="constrained-smiles"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   placeholder="e.g., CCO">
+                        </div>
+
+                        <div>
+                            <label for="constrained-atoms" class="block text-sm font-medium text-gray-700 mb-1">
+                                Constrained Atoms (comma-separated indices)
+                            </label>
+                            <input type="text"
+                                   id="constrained-atoms"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   placeholder="e.g., 0,1,2">
+                        </div>
+
+                        <div>
+                            <label for="constrained-distances" class="block text-sm font-medium text-gray-700 mb-1">
+                                Distance Constraints (atom1,atom2,distance;...)
+                            </label>
+                            <textarea id="constrained-distances"
+                                      rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                      placeholder="e.g., 0,1,1.5;1,2,1.5"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Geometry Transforms Parameters -->
+                    <div id="geometry-params" class="space-y-4" style="display: none;">
+                        <div>
+                            <label for="geometry-smiles" class="block text-sm font-medium text-gray-700 mb-1">
+                                Molecule SMILES
+                            </label>
+                            <input type="text"
+                                   id="geometry-smiles"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   placeholder="e.g., CC(=O)OC1=CC=CC=C1C(=O)O">
+                        </div>
+
+                        <div>
+                            <label for="geometry-transform-type" class="block text-sm font-medium text-gray-700 mb-1">
+                                Transform Type
+                            </label>
+                            <select id="geometry-transform-type"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+                                <option value="bond">Set Bond Length</option>
+                                <option value="angle">Set Bond Angle</option>
+                                <option value="dihedral">Set Dihedral Angle</option>
+                                <option value="centroid">Calculate Centroid</option>
+                                <option value="principal_axes">Principal Axes</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="geometry-atom-ids" class="block text-sm font-medium text-gray-700 mb-1">
+                                Atom IDs (comma-separated)
+                            </label>
+                            <input type="text"
+                                   id="geometry-atom-ids"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   placeholder="e.g., 0,1 or 0,1,2 or 0,1,2,3">
+                            <p class="text-xs text-gray-500 mt-1">Bond: 2 atoms, Angle: 3 atoms, Dihedral: 4 atoms</p>
+                        </div>
+
+                        <div>
+                            <label for="geometry-value" class="block text-sm font-medium text-gray-700 mb-1">
+                                Target Value (Å for bonds, degrees for angles)
+                            </label>
+                            <input type="number"
+                                   id="geometry-value"
+                                   step="0.01"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   placeholder="e.g., 1.5 or 120.0">
+                        </div>
+                    </div>
+
+                    <!-- File Import -->
+                    <div class="bg-teal-50 border border-teal-200 rounded-lg p-3">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="upload" class="w-4 h-4 mr-2 text-teal-600"></i>
+                            <span class="text-sm font-medium text-teal-900">Import: Upload structure file</span>
+                        </div>
+                        <input type="file"
+                               id="coordinates-file-import"
+                               accept=".sdf,.mol"
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+                        <p class="text-xs text-gray-600 mt-1">Import structures with coordinates (.sdf, .mol - max 50 MB)</p>
+                    </div>
+
+                    <button id="generate-coords-btn"
+                            class="w-full inline-flex items-center justify-center px-4 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors">
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                        Generate Coordinates
+                    </button>
+                </div>
+
+                <!-- Quick Examples -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Quick Examples</h3>
+                    <div class="space-y-2">
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CCO">
+                            Ethanol (simple)
+                        </button>
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CC(=O)OC1=CC=CC=C1C(=O)O">
+                            Aspirin (aromatic)
+                        </button>
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CC12CCC3C(C1CCC2O)CCC4=CC(=O)CCC34C">
+                            Testosterone (steroid)
+                        </button>
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="C1CCC2CCCCC2C1">
+                            Decalin (flexible)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Format Options -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Export Options</h3>
+                    <div class="space-y-2">
+                        <button id="export-sdf-btn" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                                disabled>
+                            <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                            Export as SDF
+                        </button>
+                        <button id="export-mol-btn" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                                disabled>
+                            <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                            Export as MOL
+                        </button>
+                        <button id="export-xyz-btn" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                                disabled>
+                            <i data-lucide="image" class="w-4 h-4 mr-2"></i>
+                            Export as XYZ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="lg:col-span-2">
+            <div class="space-y-6">
+                <!-- 3D Viewer -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                            <i data-lucide="eye" class="w-5 h-5 mr-2"></i>
+                            3D Viewer
+                        </h2>
+                        <div class="flex space-x-2">
+                            <button id="reset-view-btn" 
+                                    class="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors">
+                                <i data-lucide="refresh-cw" class="w-4 h-4 mr-1"></i>
+                                Reset View
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="coordinate-viewer" class="coordinate-viewer bg-gray-50 rounded-lg border-2 border-dashed border-gray-300" style="height: 500px; display: flex; align-items: center; justify-content: center;">
+                        <div class="text-center text-gray-500">
+                            <i data-lucide="box" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                            <p class="text-lg font-medium">Ready to generate coordinates</p>
+                            <p class="text-sm">Enter a SMILES string and select generation type</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Viewer Controls -->
+                    <div id="viewer-controls" class="mt-8 pt-6 border-t border-gray-200 hidden">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Conformer</label>
+                                <select id="conformer-selector" class="w-full text-sm border border-gray-300 rounded px-2 py-1">
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Style</label>
+                                <select id="render-style" class="w-full text-sm border border-gray-300 rounded px-2 py-1">
+                                    <option value="sphere">Ball & Stick</option>
+                                    <option value="stick">Stick</option>
+                                    <option value="line">Wireframe</option>
+                                    <option value="cross">Cross</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Color</label>
+                                <select id="color-scheme" class="w-full text-sm border border-gray-300 rounded px-2 py-1">
+                                    <option value="element">By Element</option>
+                                    <option value="rainbow">Rainbow</option>
+                                    <option value="uniform">Uniform</option>
+                                    <option value="depth">By Depth</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Background</label>
+                                <select id="bg-color" class="w-full text-sm border border-gray-300 rounded px-2 py-1">
+                                    <option value="white">White</option>
+                                    <option value="black">Black</option>
+                                    <option value="gray">Gray</option>
+                                    <option value="transparent">Transparent</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conformer Analysis -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5 mr-2"></i>
+                        Conformer Analysis
+                    </h3>
+                    
+                    <div id="conformer-analysis" class="min-h-[200px]">
+                        <div class="flex items-center justify-center h-32 text-gray-500">
+                            <div class="text-center">
+                                <i data-lucide="bar-chart-2" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                                <p class="text-sm">Analysis results will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coordinate Data -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <i data-lucide="table" class="w-5 h-5 mr-2"></i>
+                            Coordinate Data
+                        </h3>
+                        <button id="toggle-coords-btn" 
+                                class="text-sm text-blue-600 hover:text-blue-800 transition-colors">
+                            Show Coordinates
+                        </button>
+                    </div>
+                    
+                    <div id="coordinate-data" class="hidden overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-900">Atom</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-900">Element</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-900">X</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-900">Y</th>
+                                    <th class="px-3 py-2 text-left font-medium text-gray-900">Z</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coords-table-body">
+                                <!-- Coordinate data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for SMILES parameter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const smilesParam = urlParams.get('smiles');
+    if (smilesParam) {
+        document.getElementById('coordinate-input').value = smilesParam;
+        // Auto-generate coordinates if SMILES was provided
+        generateCoordinates();
+    }
+    
+    // Generate coordinates button handler
+    document.getElementById('generate-coords-btn').addEventListener('click', function() {
+        generateCoordinates();
+    });
+    
+    // Export button handlers
+    document.getElementById('export-sdf-btn').addEventListener('click', function() {
+        exportCoordinates('sdf');
+    });
+    document.getElementById('export-mol-btn').addEventListener('click', function() {
+        exportCoordinates('mol');
+    });
+    document.getElementById('export-xyz-btn').addEventListener('click', function() {
+        exportCoordinates('xyz');
+    });
+    
+    // Coordinate type change handler
+    document.getElementById('coordinate-type').addEventListener('change', function() {
+        updateCoordinateParams();
+    });
+    
+    // Example molecule handlers
+    document.querySelectorAll('.example-molecule').forEach(button => {
+        button.addEventListener('click', function() {
+            const smiles = this.getAttribute('data-smiles');
+            document.getElementById('coordinate-input').value = smiles;
+            generateCoordinates();
+        });
+    });
+    
+    // Viewer controls
+    document.getElementById('conformer-selector').addEventListener('change', function() {
+        updateConformerViewer();
+    });
+    
+    document.getElementById('reset-view-btn').addEventListener('click', function() {
+        resetCoordinate3DView();
+    });
+    
+    document.getElementById('toggle-coords-btn').addEventListener('click', function() {
+        toggleCoordinateTable();
+    });
+    
+    // Add event listeners for viewer style controls
+    document.getElementById('render-style').addEventListener('change', function() {
+        updateCoordinate3DStyle(this.value);
+        // Sync with visualization page styles if both pages are loaded
+        if (window.syncAllStyleDropdowns) {
+            window.syncAllStyleDropdowns(this.value);
+        }
+    });
+    
+    document.getElementById('color-scheme').addEventListener('change', function() {
+        updateCoordinate3DColor(this.value);
+    });
+    
+    document.getElementById('bg-color').addEventListener('change', function() {
+        updateCoordinate3DBackground(this.value);
+    });
+    
+    updateCoordinateParams();
+    generateCoordinates(); // Auto-generate on page load
+});
+
+function updateCoordinateParams() {
+    const coordType = document.getElementById('coordinate-type').value;
+    const conformerParams = document.getElementById('conformer-params');
+    const optimizationParams = document.getElementById('optimization-params');
+    const o3aParams = document.getElementById('o3a-params');
+    const constrainedParams = document.getElementById('constrained-params');
+    const geometryParams = document.getElementById('geometry-params');
+
+    // Hide all parameter sections first
+    conformerParams.style.display = 'none';
+    optimizationParams.style.display = 'none';
+    o3aParams.style.display = 'none';
+    constrainedParams.style.display = 'none';
+    geometryParams.style.display = 'none';
+
+    // Show/hide parameter sections based on coordinate type
+    if (coordType === 'multiple') {
+        conformerParams.style.display = 'block';
+    } else if (coordType === 'optimize' || coordType === '3d') {
+        optimizationParams.style.display = 'block';
+    } else if (coordType === 'o3a') {
+        o3aParams.style.display = 'block';
+    } else if (coordType === 'constrained') {
+        constrainedParams.style.display = 'block';
+    } else if (coordType === 'geometry') {
+        geometryParams.style.display = 'block';
+    }
+}
+
+async function generateCoordinates() {
+    const fileInput = document.getElementById('coordinates-file-import');
+    if (fileInput && fileInput.files.length > 0) {
+        await importCoordinatesFile();
+        return;
+    }
+
+    const coordType = document.getElementById('coordinate-type').value;
+    let smiles = document.getElementById('coordinate-input').value.trim();
+
+    // For new coordinate types, get SMILES from their specific inputs
+    if (coordType === 'constrained') {
+        smiles = document.getElementById('constrained-smiles').value.trim();
+    } else if (coordType === 'geometry') {
+        smiles = document.getElementById('geometry-smiles').value.trim();
+    }
+
+    if (!smiles && coordType !== 'o3a') {
+        showAlert('Please enter a SMILES string', 'warning');
+        return;
+    }
+
+    try {
+        // Show loading state
+        document.getElementById('coordinate-viewer').innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Processing ${coordType.toUpperCase()}...</p>
+                </div>
+            </div>
+        `;
+
+        // Prepare request parameters
+        let params = {};
+
+        if (coordType === 'multiple') {
+            params.smiles = smiles;
+            params.num_conformers = parseInt(document.getElementById('num-conformers').value);
+            params.energy_window = parseFloat(document.getElementById('energy-window').value);
+            const seed = document.getElementById('random-seed').value;
+            if (seed) params.random_seed = parseInt(seed);
+        } else if (coordType === 'optimize' || coordType === '3d') {
+            params.smiles = smiles;
+            params.force_field = document.getElementById('force-field').value;
+            params.max_iters = parseInt(document.getElementById('max-iters').value);
+        } else if (coordType === 'o3a') {
+            const probeSmiles = document.getElementById('o3a-probe-smiles').value.trim();
+            const refSmiles = document.getElementById('o3a-reference-smiles').value.trim();
+
+            if (!probeSmiles || !refSmiles) {
+                showAlert('Please enter both probe and reference SMILES', 'warning');
+                return;
+            }
+
+            params.probe_smiles = probeSmiles;
+            params.ref_smiles = refSmiles;
+            params.use_crippen = document.getElementById('o3a-use-crippen').checked;
+        } else if (coordType === 'constrained') {
+            const constrainedSmiles = document.getElementById('constrained-smiles').value.trim();
+
+            if (!constrainedSmiles) {
+                showAlert('Please enter a SMILES string for constrained embedding', 'warning');
+                return;
+            }
+
+            params.smiles = constrainedSmiles;
+
+            const atomsStr = document.getElementById('constrained-atoms').value.trim();
+            if (atomsStr) {
+                params.constrained_atoms = atomsStr.split(',').map(x => parseInt(x.trim()));
+            }
+
+            const distStr = document.getElementById('constrained-distances').value.trim();
+            if (distStr) {
+                params.distance_constraints = distStr.split(';').map(constraint => {
+                    const parts = constraint.trim().split(',');
+                    return {
+                        atom1: parseInt(parts[0]),
+                        atom2: parseInt(parts[1]),
+                        distance: parseFloat(parts[2])
+                    };
+                });
+            }
+        } else if (coordType === 'geometry') {
+            const geometrySmiles = document.getElementById('geometry-smiles').value.trim();
+
+            if (!geometrySmiles) {
+                showAlert('Please enter a SMILES string for geometry transforms', 'warning');
+                return;
+            }
+
+            params.smiles = geometrySmiles;
+            params.transform_type = document.getElementById('geometry-transform-type').value;
+
+            const atomIdsStr = document.getElementById('geometry-atom-ids').value.trim();
+            if (atomIdsStr) {
+                params.atom_ids = atomIdsStr.split(',').map(x => parseInt(x.trim()));
+            }
+
+            const value = document.getElementById('geometry-value').value;
+            if (value) {
+                params.value = parseFloat(value);
+            }
+        } else {
+            params.smiles = smiles;
+        }
+
+        // Make API request
+        // Map coordType to correct endpoint
+        let endpoint = coordType;
+        if (coordType === 'o3a') {
+            endpoint = 'o3a_align';
+        } else if (coordType === 'constrained') {
+            endpoint = 'constrained_embed';
+        } else if (coordType === 'geometry') {
+            endpoint = 'geometry_transforms';
+        }
+
+        const response = await fetch(`/api/v1/coordinates/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(params)
+        });
+        
+        const data = await response.json();
+
+        if (data.success) {
+            // Use the appropriate SMILES based on coord type
+            let displaySmiles = smiles;
+            if (coordType === 'constrained') {
+                displaySmiles = document.getElementById('constrained-smiles').value.trim();
+            } else if (coordType === 'geometry') {
+                displaySmiles = document.getElementById('geometry-smiles').value.trim();
+            } else if (coordType === 'o3a') {
+                displaySmiles = document.getElementById('o3a-probe-smiles').value.trim();
+            }
+
+            displayCoordinates(data, displaySmiles, coordType);
+            enableExportButtons();
+            window.lastCoordinateData = data; // Store for export
+        } else {
+            showAlert(data.error || 'Coordinate generation failed', 'danger');
+            resetViewer();
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+        resetViewer();
+    }
+}
+
+function displayCoordinates(data, smiles, coordType) {
+    const viewerDiv = document.getElementById('coordinate-viewer');
+    const analysisDiv = document.getElementById('conformer-analysis');
+    
+    // Store data globally for conformer switching
+    window.currentCoordinateData = data;
+    
+    // Display molecular structure - handle different response formats
+    if (data.coordinates || data.conformers || data.mol_block) {
+        displayMolecularStructure(data, smiles, coordType);
+    }
+    
+    // Setup conformer selector if multiple conformers
+    if (data.conformers && data.conformers.length > 1) {
+        setupConformerSelector(data.conformers);
+    } else {
+        // Clear conformer selector for single conformer but keep it visible
+        const selector = document.getElementById('conformer-selector');
+        if (selector) {
+            selector.innerHTML = '<option value="0">Single Conformer</option>';
+        }
+    }
+    
+    // Always show viewer controls for 3D visualizations
+    if (coordType === '3d' || coordType === 'optimize' || coordType === 'multiple') {
+        document.getElementById('viewer-controls').classList.remove('hidden');
+    }
+    
+    // Display analysis
+    displayConformerAnalysis(data, coordType);
+    
+    // Setup coordinate table
+    setupCoordinateTable(data);
+}
+
+function displayMolecularStructure(data, smiles, coordType) {
+    const viewerDiv = document.getElementById('coordinate-viewer');
+    
+    // Get coordinate data
+    let coords = null;
+    let conformerInfo = '';
+    let showAs3D = false;
+    
+    if (data.conformers && data.conformers.length > 0) {
+        coords = data.conformers[0].coordinates;
+        conformerInfo = `${data.conformers.length} conformer(s) generated`;
+        if (data.conformers[0].energy !== undefined && data.conformers[0].energy !== null && typeof data.conformers[0].energy === 'number') {
+            conformerInfo += `, Energy: ${data.conformers[0].energy.toFixed(4)}`;
+        }
+        showAs3D = (coordType === '3d' || coordType === 'multiple');
+    } else if (data.coordinates) {
+        coords = data.coordinates;
+        if (coordType === 'optimize') {
+            conformerInfo = 'Geometry optimized';
+            if (data.optimization_energy !== undefined && data.optimization_energy !== null && typeof data.optimization_energy === 'number') {
+                conformerInfo += `, Energy: ${data.optimization_energy.toFixed(4)}`;
+            }
+            if (data.force_field) {
+                conformerInfo += ` (${data.force_field})`;
+            }
+        } else {
+            conformerInfo = '';
+        }
+        showAs3D = (coordType === 'optimize');
+    }
+    
+    if (!coords) {
+        viewerDiv.innerHTML = `
+            <div class="text-center text-gray-500">
+                <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-2"></i>
+                <p>No coordinate data available</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Calculate 3D properties
+    const numAtoms = coords.length;
+    const atomTypes = [...new Set(coords.map(atom => atom.symbol))];
+    const xCoords = coords.map(atom => atom.x);
+    const yCoords = coords.map(atom => atom.y);
+    const zCoords = coords.map(atom => atom.z);
+    
+    const xRange = Math.max(...xCoords) - Math.min(...xCoords);
+    const yRange = Math.max(...yCoords) - Math.min(...yCoords);  
+    const zRange = Math.max(...zCoords) - Math.min(...zCoords);
+    
+    if (showAs3D) {
+        // Display for 3D coordinate types
+        viewerDiv.innerHTML = `
+            <div class="w-full h-full">
+                <!-- Success Badge -->
+                <div class="text-center mb-3">
+                    <div class="inline-flex items-center px-3 py-1 ${
+                        coordType === '3d' ? 'bg-blue-100 text-blue-800' :
+                        coordType === 'optimize' ? 'bg-purple-100 text-purple-800' :
+                        coordType === 'multiple' ? 'bg-orange-100 text-orange-800' :
+                        'bg-green-100 text-green-800'
+                    } rounded-full text-xs font-medium">
+                        <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i>
+                        ${
+                            coordType === '3d' ? '3D Conformer' :
+                            coordType === 'optimize' ? '3D Optimized' :
+                            coordType === 'multiple' ? 'Multiple Conformers' :
+                            coordType.toUpperCase()
+                        } (${numAtoms} atoms)
+                    </div>
+                    <div class="text-xs text-gray-600 mt-1 break-words text-center px-2" title="${conformerInfo}">
+                        <span class="inline-block max-w-full truncate">${conformerInfo}</span>
+                    </div>
+                </div>
+                
+                <!-- 3D Visualization -->
+                <div class="bg-black border border-gray-200 rounded-lg p-1 mb-4">
+                    <div id="coord-3d-viewer" class="w-full bg-black rounded" style="height: 420px;"></div>
+                </div>
+                
+                <!-- Controls and Info -->
+                <div class="text-center mt-6 px-2">
+                    <div class="text-xs text-gray-500 mb-1 truncate max-w-full" title="${atomTypes.join(', ')} • ${xRange.toFixed(1)}×${yRange.toFixed(1)}×${zRange.toFixed(1)} Å">
+                        ${atomTypes.slice(0, 3).join(', ')}${atomTypes.length > 3 ? '...' : ''} • ${xRange.toFixed(1)}×${yRange.toFixed(1)}×${zRange.toFixed(1)} Å
+                    </div>
+                    <div class="text-xs text-gray-500 mb-1 break-words">
+                        <span class="hidden sm:inline">Drag to rotate • Scroll to zoom • </span>Interactive 3D viewer
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Render 3D structure with 3Dmol.js
+        setTimeout(() => {
+            if (coordType === 'multiple' && data.conformers && data.conformers.length > 1) {
+                initCoordinate3DViewer(data.conformers[0].coordinates, data.conformers);
+            } else {
+                initCoordinate3DViewer(coords);
+            }
+        }, 200);
+    } else {
+        // Display 2D structure for 2D coordinate types
+        fetch('/api/v1/visualization/draw_svg', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ smiles, width: 350, height: 300 })
+        })
+        .then(response => response.json())
+        .then(vizData => {
+            if (vizData.success) {
+                viewerDiv.innerHTML = `
+                    <div class="text-center">
+                        <!-- Success Badge -->
+                        <div class="inline-flex items-center px-3 py-1 mb-2 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                            <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i>
+                            2D Coordinates (${numAtoms} atoms)
+                        </div>
+                        
+                        <!-- Additional Info -->
+                        <div class="text-xs text-gray-600 mb-2">${conformerInfo}</div>
+                        
+                        <!-- 2D Structure Display -->
+                        <div class="mb-2">
+                            ${vizData.svg}
+                        </div>
+                        
+                        <!-- Quick Info -->
+                        <div class="text-xs text-gray-500">
+                            ${atomTypes.join(', ')} • 2D Coordinates
+                        </div>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            viewerDiv.innerHTML = `
+                <div class="text-center text-gray-600">
+                    <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-2 text-green-500"></i>
+                    <p class="font-medium">Coordinates Generated</p>
+                    <p class="text-sm">Molecule: <code>${smiles}</code></p>
+                </div>
+            `;
+        });
+    }
+    
+    // Re-initialize icons
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
+function setupConformerSelector(conformers) {
+    const selector = document.getElementById('conformer-selector');
+    if (!selector) return;
+    
+    selector.innerHTML = '';
+    
+    conformers.forEach((conformer, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `Conformer ${index + 1}`;
+        
+        // Use the correct property name from the API response
+        if (conformer.relative_energy_kcal_mol !== undefined) {
+            const energy = conformer.relative_energy_kcal_mol;
+            // Show more precision for very small energy differences
+            const precision = energy < 0.01 ? 4 : 2;
+            option.textContent += ` (${energy.toFixed(precision)} kcal/mol)`;
+        }
+        selector.appendChild(option);
+    });
+}
+
+function displayConformerAnalysis(data, coordType) {
+    const analysisDiv = document.getElementById('conformer-analysis');
+    
+    let html = '<div class="space-y-4">';
+    
+    // Get coordinate data - handle different data structures
+    let coords = null;
+    let numAtoms = 0;
+    let numConformers = 1;
+    
+    if (data.conformers && data.conformers.length > 0) {
+        coords = data.conformers[0].coordinates;
+        numAtoms = coords ? coords.length : 0;
+        numConformers = data.conformers.length;
+    } else if (data.coordinates) {
+        coords = data.coordinates;
+        numAtoms = coords ? coords.length : 0;
+        numConformers = 1;
+    }
+    
+    // Basic information
+    html += `
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-lg font-semibold text-gray-900">${numAtoms || 'N/A'}</div>
+                <div class="text-xs text-gray-600">Atoms</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-lg font-semibold text-gray-900">${numConformers}</div>
+                <div class="text-xs text-gray-600">Conformers</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-lg font-semibold text-gray-900">${coordType.toUpperCase()}</div>
+                <div class="text-xs text-gray-600">Type</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-lg font-semibold text-gray-900">${data.optimized ? (data.force_field || 'UFF') : 'None'}</div>
+                <div class="text-xs text-gray-600">Optimization</div>
+            </div>
+        </div>
+    `;
+    
+    // Energy and conformer analysis
+    if (data.conformers && data.conformers.length > 0) {
+        if (data.conformers.length > 1) {
+            // Multiple conformers - show energy distribution
+            const relativeEnergies = data.conformers.map(c => c.relative_energy_kcal_mol ?? 0);
+            if (relativeEnergies.length > 0) {
+                const minEnergy = Math.min(...relativeEnergies);
+                const maxEnergy = Math.max(...relativeEnergies);
+                const avgEnergy = relativeEnergies.reduce((a, b) => a + b, 0) / relativeEnergies.length;
+                const energyRange = maxEnergy - minEnergy;
+                
+                // Check if energies are very similar (less than 0.01 kcal/mol difference)
+                const isLowEnergyRange = energyRange < 0.01;
+                
+                html += `
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 class="font-medium text-blue-900 mb-3">Energy Distribution (kcal/mol)</h4>
+                        ${isLowEnergyRange ? `
+                        <div class="mb-3 text-center">
+                            <div class="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                                <i data-lucide="info" class="w-3 h-3 mr-1"></i>
+                                All conformers have very similar energies
+                            </div>
+                        </div>
+                        ` : ''}
+                        <div class="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                                <div class="text-lg font-semibold text-blue-900">${minEnergy.toFixed(isLowEnergyRange ? 6 : 3)}</div>
+                                <div class="text-xs text-blue-700">Min Energy</div>
+                            </div>
+                            <div>
+                                <div class="text-lg font-semibold text-blue-900">${avgEnergy.toFixed(isLowEnergyRange ? 6 : 3)}</div>
+                                <div class="text-xs text-blue-700">Avg Energy</div>
+                            </div>
+                            <div>
+                                <div class="text-lg font-semibold text-blue-900">${maxEnergy.toFixed(isLowEnergyRange ? 6 : 3)}</div>
+                                <div class="text-xs text-blue-700">Max Energy</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <div class="text-sm text-blue-800">
+                                Energy range: ${energyRange.toFixed(isLowEnergyRange ? 6 : 3)} kcal/mol
+                                ${data.num_conformers_generated ? `<br>Generated ${data.num_conformers_generated} conformers, showing ${data.conformers.length}` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Re-initialize icons for the info icon
+                setTimeout(() => {
+                    if (window.lucide) lucide.createIcons();
+                }, 200);
+            }
+        } else {
+            // Single conformer - show detailed analysis
+            const conformer = data.conformers[0];
+            const coords = conformer.coordinates;
+            
+            if (coords && coords.length > 0) {
+                const atomTypes = [...new Set(coords.map(atom => atom.symbol))];
+                const xCoords = coords.map(atom => atom.x);
+                const yCoords = coords.map(atom => atom.y);
+                const zCoords = coords.map(atom => atom.z);
+                
+                const xRange = Math.max(...xCoords) - Math.min(...xCoords);
+                const yRange = Math.max(...yCoords) - Math.min(...yCoords);
+                const zRange = Math.max(...zCoords) - Math.min(...zCoords);
+                const volume = xRange * yRange * zRange;
+                
+                html += `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h4 class="font-medium text-green-900 mb-3">Molecular Geometry</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-sm text-green-800 space-y-1">
+                                    <div class="flex justify-between">
+                                        <span>X-dimension:</span>
+                                        <span class="font-mono">${xRange.toFixed(2)} Å</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Y-dimension:</span>
+                                        <span class="font-mono">${yRange.toFixed(2)} Å</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Z-dimension:</span>
+                                        <span class="font-mono">${zRange.toFixed(2)} Å</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-green-800 space-y-1">
+                                    <div class="flex justify-between">
+                                        <span>Volume:</span>
+                                        <span class="font-mono">${volume.toFixed(1)} Å³</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Elements:</span>
+                                        <span class="font-mono">${atomTypes.join(', ')}</span>
+                                    </div>
+                                    ${data.optimized && conformer.energy_hartree ? `
+                                    <div class="flex justify-between">
+                                        <span>Energy:</span>
+                                        <span class="font-mono">${conformer.energy_hartree.toFixed(4)} Ha</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    } else if (data.coordinates && coordType === '2d') {
+        // 2D coordinates analysis
+        const coords = data.coordinates;
+        if (coords && coords.length > 0) {
+            const atomTypes = [...new Set(coords.map(atom => atom.symbol))];
+            const xCoords = coords.map(atom => atom.x);
+            const yCoords = coords.map(atom => atom.y);
+            
+            const xRange = Math.max(...xCoords) - Math.min(...xCoords);
+            const yRange = Math.max(...yCoords) - Math.min(...yCoords);
+            
+            html += `
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <h4 class="font-medium text-purple-900 mb-3">2D Structure Analysis</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="text-sm text-purple-800 space-y-1">
+                                <div class="flex justify-between">
+                                    <span>X-dimension:</span>
+                                    <span class="font-mono">${xRange.toFixed(2)} Å</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Y-dimension:</span>
+                                    <span class="font-mono">${yRange.toFixed(2)} Å</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-purple-800 space-y-1">
+                                <div class="flex justify-between">
+                                    <span>Elements:</span>
+                                    <span class="font-mono">${atomTypes.join(', ')}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Dimensionality:</span>
+                                    <span class="font-mono">2D Planar</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // Additional analysis for optimized structures
+    if (data.optimized && data.force_field) {
+        html += `
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 class="font-medium text-yellow-900 mb-3">Optimization Details</h4>
+                <div class="text-sm text-yellow-800 space-y-1">
+                    <div class="flex justify-between">
+                        <span>Force Field:</span>
+                        <span class="font-mono">${data.force_field}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Status:</span>
+                        <span class="font-mono">Converged</span>
+                    </div>
+                    ${data.conformers && data.conformers.length === 1 ? `
+                    <div class="flex justify-between">
+                        <span>Final Energy:</span>
+                        <span class="font-mono">${data.conformers[0].energy_hartree ? data.conformers[0].energy_hartree.toFixed(4) + ' Ha' : 'N/A'}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    analysisDiv.innerHTML = html;
+}
+
+function setupCoordinateTable(data) {
+    if (!data.coordinates) return;
+    
+    const tableBody = document.getElementById('coords-table-body');
+    
+    // Handle different coordinate structures
+    let coords;
+    if (data.conformers && data.conformers.length > 0) {
+        // Multiple conformers - use first one
+        coords = data.conformers[0].coordinates;
+    } else if (Array.isArray(data.coordinates)) {
+        // Single coordinate array
+        coords = data.coordinates;
+    } else {
+        // Invalid format
+        console.error('Invalid coordinates format:', data.coordinates);
+        tableBody.innerHTML = '<tr><td colspan="5" class="px-3 py-2 text-gray-500">No coordinate data available</td></tr>';
+        return;
+    }
+    
+    // Ensure coords is an array
+    if (!Array.isArray(coords)) {
+        console.error('Coordinates is not an array:', coords);
+        tableBody.innerHTML = '<tr><td colspan="5" class="px-3 py-2 text-gray-500">Invalid coordinate format</td></tr>';
+        return;
+    }
+    
+    tableBody.innerHTML = coords.map((atom, index) => `
+        <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+            <td class="px-3 py-2 font-mono">${index + 1}</td>
+            <td class="px-3 py-2 font-semibold">${atom.symbol || atom.element || 'N/A'}</td>
+            <td class="px-3 py-2 font-mono">${atom.x.toFixed(4)}</td>
+            <td class="px-3 py-2 font-mono">${atom.y.toFixed(4)}</td>
+            <td class="px-3 py-2 font-mono">${atom.z.toFixed(4)}</td>
+        </tr>
+    `).join('');
+}
+
+function updateCoordinateTable(coords) {
+    const tableBody = document.getElementById('coords-table-body');
+    if (!tableBody || !coords || !Array.isArray(coords)) return;
+    
+    tableBody.innerHTML = coords.map((atom, index) => `
+        <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+            <td class="px-3 py-2 font-mono">${index + 1}</td>
+            <td class="px-3 py-2 font-semibold">${atom.symbol || atom.element || 'N/A'}</td>
+            <td class="px-3 py-2 font-mono">${atom.x.toFixed(4)}</td>
+            <td class="px-3 py-2 font-mono">${atom.y.toFixed(4)}</td>
+            <td class="px-3 py-2 font-mono">${atom.z.toFixed(4)}</td>
+        </tr>
+    `).join('');
+}
+
+function toggleCoordinateTable() {
+    const table = document.getElementById('coordinate-data');
+    const button = document.getElementById('toggle-coords-btn');
+    
+    if (table.classList.contains('hidden')) {
+        table.classList.remove('hidden');
+        button.textContent = 'Hide Coordinates';
+    } else {
+        table.classList.add('hidden');
+        button.textContent = 'Show Coordinates';
+    }
+}
+
+function enableExportButtons() {
+    document.getElementById('export-sdf-btn').disabled = false;
+    document.getElementById('export-mol-btn').disabled = false;
+    document.getElementById('export-xyz-btn').disabled = false;
+}
+
+function resetViewer() {
+    const viewerDiv = document.getElementById('coordinate-viewer');
+    viewerDiv.innerHTML = `
+        <div class="text-center text-gray-500">
+            <i data-lucide="alert-circle" class="w-16 h-16 mx-auto mb-4 text-red-400"></i>
+            <p class="text-lg font-medium">Generation Failed</p>
+            <p class="text-sm">Please try again with different parameters</p>
+        </div>
+    `;
+    
+    // Re-initialize icons
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
+async function exportCoordinates(format) {
+    if (!window.lastCoordinateData) {
+        showAlert('No coordinate data available to export', 'warning');
+        return;
+    }
+    
+    const data = window.lastCoordinateData;
+    const smiles = document.getElementById('coordinate-input').value;
+    
+    if (!smiles) {
+        showAlert('No SMILES string available for export', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/v1/coordinates/export/${format}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                smiles: smiles,
+                coordinate_data: data
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Download the file
+            const blob = new Blob([result.file_content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `coordinates_${smiles.replace(/[^a-zA-Z0-9]/g, '_')}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showAlert(`Exported as ${format.toUpperCase()}`, 'success');
+        } else {
+            showAlert(result.error || 'Export failed', 'danger');
+        }
+        
+    } catch (error) {
+        console.error('Export error:', error);
+        showAlert('Export failed', 'danger');
+    }
+}
+
+function updateViewer() {
+    // Get current conformer selection
+    const conformerSelector = document.getElementById('conformer-selector');
+    if (!conformerSelector || !window.currentCoordinateData) return;
+    
+    const selectedIndex = parseInt(conformerSelector.value);
+    const data = window.currentCoordinateData;
+    
+    // Update 3D viewer if multiple conformers are available
+    if (data.conformers && data.conformers.length > 1) {
+        // Update the 3D viewer coordinates and redraw
+        if (viewer3D && viewer3D.conformers) {
+            viewer3D.currentConformerIndex = selectedIndex;
+            viewer3D.coords = data.conformers[selectedIndex].coordinates;
+            viewer3D.bonds = computeBonds(viewer3D.coords);
+            
+            // Redraw the 3D structure
+            const canvas = document.getElementById('3d-canvas');
+            if (canvas) {
+                draw3DStructure(canvas);
+            }
+        }
+        
+        // Update conformer analysis
+        updateConformerAnalysis(data.conformers, selectedIndex);
+        
+        // Update coordinate table if visible
+        updateCoordinateTable(data.conformers[selectedIndex].coordinates);
+    }
+}
+
+function resetViewer3D() {
+    if (!viewer3D) return;
+    
+    // Reset all 3D viewer parameters to default values
+    viewer3D.rotX = 0.3;
+    viewer3D.rotY = 0.5;
+    viewer3D.zoom = 80;
+    viewer3D.panX = 0;
+    viewer3D.panY = 0;
+    
+    // Reset visual settings to defaults
+    viewer3D.renderStyle = 'sphere';
+    viewer3D.colorScheme = 'element';
+    viewer3D.backgroundColor = 'white';
+    
+    // Reset the dropdown controls to match
+    const renderStyleSelect = document.getElementById('render-style');
+    const colorSchemeSelect = document.getElementById('color-scheme');
+    const bgColorSelect = document.getElementById('bg-color');
+    const conformerSelector = document.getElementById('conformer-selector');
+    
+    if (renderStyleSelect) renderStyleSelect.value = 'sphere';
+    if (colorSchemeSelect) colorSchemeSelect.value = 'element';
+    if (bgColorSelect) bgColorSelect.value = 'white';
+    
+    // Reset conformer selector to first conformer if multiple conformers exist
+    if (conformerSelector && viewer3D.conformers && viewer3D.conformers.length > 1) {
+        conformerSelector.value = '0';
+        viewer3D.currentConformerIndex = 0;
+        viewer3D.coords = viewer3D.conformers[0].coordinates;
+        viewer3D.bonds = computeBonds(viewer3D.coords);
+        
+        // Update conformer analysis for the first conformer
+        updateConformerAnalysis(viewer3D.conformers, 0);
+        updateCoordinateTable(viewer3D.conformers[0].coordinates);
+    }
+    
+    // Redraw the 3D structure with reset parameters
+    const canvas = document.getElementById('3d-canvas');
+    if (canvas && viewer3D.coords) {
+        draw3DStructure(canvas);
+    }
+    
+    showAlert('3D view fully reset to defaults', 'success');
+}
+
+function showAlert(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 max-w-sm p-4 rounded-lg shadow-lg border ${
+        type === 'danger' ? 'bg-red-50 border-red-200 text-red-800' :
+        type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+        type === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+        'bg-blue-50 border-blue-200 text-blue-800'
+    }`;
+    toast.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i data-lucide="${
+                type === 'danger' ? 'alert-circle' : 
+                type === 'warning' ? 'alert-triangle' : 
+                type === 'success' ? 'check-circle' : 'info'
+            }" class="w-4 h-4"></i>
+            <span class="text-sm font-medium">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    lucide.createIcons();
+    
+    setTimeout(() => toast.remove(), 5000);
+}
+
+// Global variables for 3D viewer state
+let viewer3D = {
+    coords: null,
+    conformers: null,
+    currentConformerIndex: 0,
+    rotX: 0.3,
+    rotY: 0.5,
+    zoom: 80,
+    panX: 0,
+    panY: 0,
+    isDragging: false,
+    isPanning: false,
+    lastMouseX: 0,
+    lastMouseY: 0,
+    bonds: [], // Pre-computed bonds
+    renderStyle: 'sphere',
+    colorScheme: 'element',
+    backgroundColor: 'white'
+};
+
+function initCoordinate3DViewer(coords, conformers = null) {
+    const element = document.getElementById('coord-3d-viewer');
+    if (!element) return;
+    
+    // Clear any existing content
+    element.innerHTML = '';
+    
+    // Ensure proper dimensions and centering
+    element.style.width = '100%';
+    element.style.height = '420px';
+    element.style.position = 'relative';
+    element.style.display = 'block';
+    element.style.margin = '0 auto';
+    
+    if (!coords || coords.length === 0) {
+        element.innerHTML = `
+            <div class="flex items-center justify-center h-full text-white">
+                <div class="text-center">
+                    <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
+                    <p class="text-sm">No coordinate data available</p>
+                </div>
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+        return;
+    }
+    
+    // Wait for element to be properly rendered before creating viewer
+    setTimeout(() => {
+        try {
+            // Ensure container has proper dimensions before creating viewer
+            if (element.offsetWidth === 0 || element.offsetHeight === 0) {
+                element.style.width = '100%';
+                element.style.height = '400px';
+            }
+            
+            // Create 3Dmol viewer
+            const viewer = $3Dmol.createViewer(element, {
+                defaultcolors: $3Dmol.elementColors.Jmol,
+                backgroundColor: 'black',
+                antialias: true
+            });
+        
+        // Convert coordinate data to XYZ format
+        let xyzData = `${coords.length}\nGenerated by NuGenRDKit Coordinates\n`;
+        for (const atom of coords) {
+            xyzData += `${atom.symbol} ${atom.x.toFixed(6)} ${atom.y.toFixed(6)} ${atom.z.toFixed(6)}\n`;
+        }
+        
+        // Add molecule to viewer
+        viewer.addModel(xyzData, 'xyz');
+        
+        // Set style based on current selection
+        const renderStyle = document.getElementById('render-style')?.value || 'sphere';
+        const colorScheme = document.getElementById('color-scheme')?.value || 'element';
+        
+        let styleConfig = {};
+        if (renderStyle === 'sphere') {
+            styleConfig = {stick: {radius: 0.15}, sphere: {radius: 0.3}};
+        } else if (renderStyle === 'stick') {
+            styleConfig = {stick: {radius: 0.15}};
+        } else if (renderStyle === 'cross') {
+            styleConfig = {cross: {radius: 0.1}};
+        } else if (renderStyle === 'line') {
+            styleConfig = {line: {linewidth: 2}};
+        } else {
+            styleConfig = {stick: {radius: 0.15}, sphere: {radius: 0.3}};
+        }
+        
+        // Apply color scheme
+        let colors;
+        switch (colorScheme) {
+            case 'rainbow':
+                colors = $3Dmol.elementColors.rasmol;
+                break;
+            case 'uniform':
+                colors = {default: 'white'};
+                break;
+            case 'depth':
+                colors = $3Dmol.elementColors.greenCarbon;
+                break;
+            default:
+                colors = $3Dmol.elementColors.Jmol;
+        }
+        
+        // Apply colors to style config
+        Object.keys(styleConfig).forEach(key => {
+            styleConfig[key].colorscheme = colors;
+        });
+        
+        viewer.setStyle({}, styleConfig);
+        viewer.setBackgroundColor('black');
+        
+        // Center and zoom
+        viewer.center();
+        viewer.zoomTo();
+        viewer.render();
+        
+        // Store viewer globally for controls
+        window.currentCoordinateViewer = viewer;
+        
+        // Don't duplicate conformer selector setup - it's already handled in displayCoordinates
+        
+        // Show viewer controls
+        const controls = document.getElementById('viewer-controls');
+        if (controls) {
+            controls.classList.remove('hidden');
+        }
+        
+        // Add resize handler
+        const resizeObserver = new ResizeObserver(() => {
+            viewer.resize();
+        });
+        resizeObserver.observe(element);
+        
+        } catch (error) {
+            console.error('Error initializing 3Dmol viewer:', error);
+            element.innerHTML = `
+                <div class="flex items-center justify-center h-full text-red-500">
+                    <div class="text-center">
+                        <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
+                        <p class="text-sm">3Dmol.js library not loaded</p>
+                    </div>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+        }
+    }, 200);
+}
+
+function computeBonds(coords) {
+    const bonds = [];
+    for (let i = 0; i < coords.length; i++) {
+        for (let j = i + 1; j < coords.length; j++) {
+            const atom1 = coords[i];
+            const atom2 = coords[j];
+            const dx = atom1.x - atom2.x;
+            const dy = atom1.y - atom2.y;
+            const dz = atom1.z - atom2.z;
+            const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            
+            // Typical bond lengths
+            let maxBondLength = 1.8; // Default
+            if ((atom1.symbol === 'H' || atom2.symbol === 'H')) maxBondLength = 1.2;
+            
+            if (distance < maxBondLength) {
+                bonds.push([i, j]);
+            }
+        }
+    }
+    return bonds;
+}
+
+function setupMouseHandlers(canvas) {
+    // Mouse down
+    canvas.addEventListener('mousedown', (e) => {
+        viewer3D.isDragging = true;
+        viewer3D.isPanning = e.shiftKey;
+        viewer3D.lastMouseX = e.offsetX;
+        viewer3D.lastMouseY = e.offsetY;
+        canvas.style.cursor = viewer3D.isPanning ? 'grabbing' : 'grabbing';
+    });
+    
+    // Mouse move
+    canvas.addEventListener('mousemove', (e) => {
+        if (viewer3D.isDragging) {
+            const deltaX = e.offsetX - viewer3D.lastMouseX;
+            const deltaY = e.offsetY - viewer3D.lastMouseY;
+            
+            if (viewer3D.isPanning) {
+                viewer3D.panX += deltaX;
+                viewer3D.panY += deltaY;
+            } else {
+                viewer3D.rotY += deltaX * 0.01;
+                viewer3D.rotX += deltaY * 0.01;
+            }
+            
+            viewer3D.lastMouseX = e.offsetX;
+            viewer3D.lastMouseY = e.offsetY;
+            
+            draw3DStructure(canvas);
+        }
+    });
+    
+    // Mouse up
+    canvas.addEventListener('mouseup', () => {
+        viewer3D.isDragging = false;
+        viewer3D.isPanning = false;
+        canvas.style.cursor = 'grab';
+    });
+    
+    // Mouse leave
+    canvas.addEventListener('mouseleave', () => {
+        viewer3D.isDragging = false;
+        viewer3D.isPanning = false;
+        canvas.style.cursor = 'grab';
+    });
+    
+    // Wheel for zooming
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+        viewer3D.zoom *= zoomFactor;
+        viewer3D.zoom = Math.max(20, Math.min(200, viewer3D.zoom)); // Limit zoom
+        draw3DStructure(canvas);
+    });
+}
+
+function draw3DStructure(canvas) {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    // Clear canvas with background color
+    const bgColors = {
+        'white': '#FFFFFF',
+        'black': '#000000', 
+        'gray': '#808080',
+        'transparent': 'transparent'
+    };
+    
+    if (viewer3D.backgroundColor !== 'transparent') {
+        ctx.fillStyle = bgColors[viewer3D.backgroundColor] || '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+    } else {
+        ctx.clearRect(0, 0, width, height);
+    }
+    
+    const coords = viewer3D.coords;
+    if (!coords || coords.length === 0) return;
+    
+    // Calculate molecule center
+    const xCoords = coords.map(atom => atom.x);
+    const yCoords = coords.map(atom => atom.y);
+    const zCoords = coords.map(atom => atom.z);
+    
+    const centerMolX = (Math.max(...xCoords) + Math.min(...xCoords)) / 2;
+    const centerMolY = (Math.max(...yCoords) + Math.min(...yCoords)) / 2;
+    const centerMolZ = (Math.max(...zCoords) + Math.min(...zCoords)) / 2;
+    
+    // Project 3D coordinates to 2D screen coordinates
+    const projectedAtoms = coords.map(atom => {
+        // Translate to origin
+        let x = atom.x - centerMolX;
+        let y = atom.y - centerMolY;
+        let z = atom.z - centerMolZ;
+        
+        // Apply rotations
+        const y1 = y * Math.cos(viewer3D.rotX) - z * Math.sin(viewer3D.rotX);
+        const z1 = y * Math.sin(viewer3D.rotX) + z * Math.cos(viewer3D.rotX);
+        const x2 = x * Math.cos(viewer3D.rotY) + z1 * Math.sin(viewer3D.rotY);
+        const z2 = -x * Math.sin(viewer3D.rotY) + z1 * Math.cos(viewer3D.rotY);
+        
+        return {
+            x: width/2 + x2 * viewer3D.zoom + viewer3D.panX,
+            y: height/2 - y1 * viewer3D.zoom + viewer3D.panY,
+            z: z2,
+            symbol: atom.symbol,
+            originalIndex: atom.atom_idx
+        };
+    });
+    
+    // Sort by z-depth for proper rendering order
+    const atomsWithDepth = projectedAtoms.map((atom, index) => ({ ...atom, index }));
+    atomsWithDepth.sort((a, b) => a.z - b.z);
+    
+    // Get colors based on color scheme
+    const getAtomColor = (atom, index) => {
+        switch (viewer3D.colorScheme) {
+            case 'element':
+                const atomColors = {
+                    'C': '#404040', 'H': '#FFFFFF', 'O': '#FF0000', 'N': '#0000FF',
+                    'S': '#FFFF00', 'P': '#FFA500', 'F': '#90EE90', 'Cl': '#00FF00',
+                    'Br': '#A52A2A', 'I': '#800080'
+                };
+                return atomColors[atom.symbol] || '#808080';
+            case 'rainbow':
+                const hue = (index / coords.length) * 360;
+                return `hsl(${hue}, 70%, 50%)`;
+            case 'uniform':
+                return '#4A90E2';
+            case 'depth':
+                const normalizedZ = (atom.z + 5) / 10; // Normalize depth
+                const intensity = Math.floor(255 * (0.3 + 0.7 * normalizedZ));
+                return `rgb(${intensity}, ${intensity}, ${intensity})`;
+            default:
+                return '#808080';
+        }
+    };
+    
+    // Draw based on render style
+    switch (viewer3D.renderStyle) {
+        case 'wireframe':
+            drawWireframe(ctx, projectedAtoms, atomsWithDepth, getAtomColor);
+            break;
+        case 'stick':
+            drawStick(ctx, projectedAtoms, atomsWithDepth, getAtomColor);
+            break;
+        case 'cross':
+            drawSpaceFill(ctx, projectedAtoms, atomsWithDepth, getAtomColor);
+            break;
+        case 'sphere':
+        default:
+            drawBallAndStick(ctx, projectedAtoms, atomsWithDepth, getAtomColor);
+            break;
+    }
+    
+    // Optional: Add molecule name or info in corner instead of instructions
+    // (Instructions are now displayed below the canvas)
+}
+
+function drawBallAndStick(ctx, projectedAtoms, atomsWithDepth, getAtomColor) {
+    // Draw bonds first
+    ctx.strokeStyle = viewer3D.backgroundColor === 'black' ? '#CCCCCC' : '#666666';
+    ctx.wireframeWidth = 2;
+    
+    viewer3D.bonds.forEach(([i, j]) => {
+        const atom1 = projectedAtoms[i];
+        const atom2 = projectedAtoms[j];
+        
+        ctx.beginPath();
+        ctx.moveTo(atom1.x, atom1.y);
+        ctx.wireframeTo(atom2.x, atom2.y);
+        ctx.stroke();
+    });
+    
+    // Draw atoms
+    atomsWithDepth.forEach(atom => {
+        const color = getAtomColor(atom, atom.index);
+        const radius = atom.symbol === 'H' ? 6 : 12;
+        
+        const depthFactor = 0.8 + 0.2 * ((atom.z + 5) / 10);
+        ctx.globalAlpha = Math.max(0.6, depthFactor);
+        
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(atom.x, atom.y, radius, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.strokeStyle = viewer3D.backgroundColor === 'black' ? '#FFFFFF' : '#000000';
+        ctx.wireframeWidth = 1;
+        ctx.stroke();
+        
+        ctx.globalAlpha = 1.0;
+        
+        // Element labels
+        if (atom.symbol !== 'H') {
+            const labelColor = (color === '#404040' || viewer3D.backgroundColor === 'black') ? '#FFFFFF' : '#000000';
+            ctx.fillStyle = labelColor;
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBasewireframe = 'middle';
+            ctx.fillText(atom.symbol, atom.x, atom.y);
+        }
+    });
+}
+
+function drawStick(ctx, projectedAtoms, atomsWithDepth, getAtomColor) {
+    // Thicker bonds, no atom spheres
+    ctx.wireframeWidth = 4;
+    
+    viewer3D.bonds.forEach(([i, j]) => {
+        const atom1 = projectedAtoms[i];
+        const atom2 = projectedAtoms[j];
+        const color1 = getAtomColor(atom1, i);
+        const color2 = getAtomColor(atom2, j);
+        
+        // Draw bond in two halves with different colors
+        const midX = (atom1.x + atom2.x) / 2;
+        const midY = (atom1.y + atom2.y) / 2;
+        
+        ctx.strokeStyle = color1;
+        ctx.beginPath();
+        ctx.moveTo(atom1.x, atom1.y);
+        ctx.wireframeTo(midX, midY);
+        ctx.stroke();
+        
+        ctx.strokeStyle = color2;
+        ctx.beginPath();
+        ctx.moveTo(midX, midY);
+        ctx.wireframeTo(atom2.x, atom2.y);
+        ctx.stroke();
+    });
+}
+
+function drawSpaceFill(ctx, projectedAtoms, atomsWithDepth, getAtomColor) {
+    // Large spheres overlapping
+    atomsWithDepth.forEach(atom => {
+        const color = getAtomColor(atom, atom.index);
+        const radius = atom.symbol === 'H' ? 12 : 20;
+        
+        const depthFactor = 0.8 + 0.2 * ((atom.z + 5) / 10);
+        ctx.globalAlpha = Math.max(0.7, depthFactor);
+        
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(atom.x, atom.y, radius, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.strokeStyle = viewer3D.backgroundColor === 'black' ? '#FFFFFF' : '#000000';
+        ctx.wireframeWidth = 0.5;
+        ctx.stroke();
+        
+        ctx.globalAlpha = 1.0;
+    });
+}
+
+function drawWireframe(ctx, projectedAtoms, atomsWithDepth, getAtomColor) {
+    // Just bonds, no atoms
+    ctx.strokeStyle = viewer3D.backgroundColor === 'black' ? '#CCCCCC' : '#333333';
+    ctx.wireframeWidth = 1;
+    
+    viewer3D.bonds.forEach(([i, j]) => {
+        const atom1 = projectedAtoms[i];
+        const atom2 = projectedAtoms[j];
+        
+        ctx.beginPath();
+        ctx.moveTo(atom1.x, atom1.y);
+        ctx.wireframeTo(atom2.x, atom2.y);
+        ctx.stroke();
+    });
+    
+    // Small dots for atoms
+    atomsWithDepth.forEach(atom => {
+        if (atom.symbol !== 'H') { // Only show non-hydrogen atoms
+            ctx.fillStyle = viewer3D.backgroundColor === 'black' ? '#FFFFFF' : '#333333';
+            ctx.beginPath();
+            ctx.arc(atom.x, atom.y, 2, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    });
+}
+
+function render3DStructureWithConformers(conformers) {
+    const canvas = document.getElementById('3d-canvas');
+    if (!canvas) return;
+    
+    // Reset and store all conformers
+    viewer3D.conformers = conformers;
+    viewer3D.currentConformerIndex = 0;
+    viewer3D.coords = conformers[0].coordinates;
+    viewer3D.rotX = 0.3;
+    viewer3D.rotY = 0.5;
+    viewer3D.zoom = 80;
+    viewer3D.panX = 0;
+    viewer3D.panY = 0;
+    
+    // Pre-compute bonds for first conformer
+    viewer3D.bonds = computeBonds(viewer3D.coords);
+    
+    // Setup mouse event handlers
+    setupMouseHandlers(canvas);
+    
+    // Add conformer selector
+    addConformerSelector(conformers);
+    
+    // Initial render
+    draw3DStructure(canvas);
+}
+
+function addConformerSelector(conformers) {
+    const canvas = document.getElementById('3d-canvas');
+    const container = canvas.parentNode.parentNode; // Go up to the main container, not just canvas container
+    
+    // Remove existing selector
+    const existingSelector = container.querySelector('.conformer-selector');
+    if (existingSelector) {
+        existingSelector.remove();
+    }
+    
+    if (conformers.length <= 1) return;
+    
+    // Create selector - place it after the 3D visualization container
+    const selectorDiv = document.createElement('div');
+    selectorDiv.className = 'conformer-selector mt-2 mb-1 bg-gray-50 border border-gray-200 rounded-lg p-2';
+    
+    selectorDiv.innerHTML = `
+        <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center space-x-2">
+                <span class="text-gray-700 font-medium">Conformer:</span>
+                <select id="conformer-select" class="px-2 py-1 border border-gray-300 rounded text-xs bg-white">
+                    ${conformers.map((conf, i) => `
+                        <option value="${i}">
+                            #${i + 1}${conf.relative_energy_kcal_mol !== undefined ? ` (${conf.relative_energy_kcal_mol.toFixed(2)} kcal/mol)` : ''}
+                        </option>
+                    `).join('')}
+                </select>
+            </div>
+            <div class="text-gray-600">
+                <span id="conformer-info">${conformers.length} total</span>
+            </div>
+        </div>
+    `;
+    
+    // Insert after the visualization container
+    const vizContainer = container.querySelector('.bg-white.border.border-gray-200.rounded-lg');
+    if (vizContainer && vizContainer.nextSibling) {
+        container.insertBefore(selectorDiv, vizContainer.nextSibling);
+    } else {
+        container.appendChild(selectorDiv);
+    }
+    
+    // Add event listener
+    const selector = document.getElementById('conformer-select');
+    if (selector) {
+        selector.addEventListener('change', (e) => {
+            const index = parseInt(e.target.value);
+            viewer3D.currentConformerIndex = index;
+            viewer3D.coords = conformers[index].coordinates;
+            viewer3D.bonds = computeBonds(viewer3D.coords);
+            draw3DStructure(canvas);
+            
+            // Update info display
+            const infoSpan = document.getElementById('conformer-info');
+            if (infoSpan) {
+                const conf = conformers[index];
+                infoSpan.textContent = `Rank ${conf.rank || index + 1}/${conformers.length}`;
+            }
+            
+            // Update conformer analysis
+            updateConformerAnalysis(conformers, index);
+        });
+    }
+}
+
+function updateConformerAnalysis(conformers, currentIndex) {
+    const analysisDiv = document.getElementById('conformer-analysis');
+    if (!analysisDiv) return;
+    
+    const currentConformer = conformers[currentIndex];
+    const coords = currentConformer.coordinates;
+    
+    // Calculate current conformer properties
+    const numAtoms = coords.length;
+    const atomTypes = [...new Set(coords.map(atom => atom.symbol))];
+    const xCoords = coords.map(atom => atom.x);
+    const yCoords = coords.map(atom => atom.y);
+    const zCoords = coords.map(atom => atom.z);
+    
+    const xRange = Math.max(...xCoords) - Math.min(...xCoords);
+    const yRange = Math.max(...yCoords) - Math.min(...yCoords);  
+    const zRange = Math.max(...zCoords) - Math.min(...zCoords);
+    const volume = xRange * yRange * zRange;
+    
+    // Get energy information - handle cases where properties might be missing
+    const relativeEnergy = currentConformer.relative_energy_kcal_mol ?? 0;
+    const absoluteEnergy = currentConformer.energy_hartree ?? currentConformer.energy ?? 'N/A';
+    const rank = currentConformer.rank ?? (currentIndex + 1);
+    
+    let html = '<div class="space-y-4">';
+    
+    // Current conformer info
+    html += `
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 class="font-medium text-blue-900 mb-3 flex items-center">
+                <i data-lucide="info" class="w-4 h-4 mr-2"></i>
+                Current Conformer #${currentIndex + 1}
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="text-center">
+                    <div class="text-lg font-semibold text-blue-900">${relativeEnergy.toFixed(2)}</div>
+                    <div class="text-xs text-blue-700">Rel. Energy (kcal/mol)</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-lg font-semibold text-blue-900">${rank}</div>
+                    <div class="text-xs text-blue-700">Energy Rank</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-lg font-semibold text-blue-900">${volume.toFixed(1)}</div>
+                    <div class="text-xs text-blue-700">Volume (Å³)</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-lg font-semibold text-blue-900">${atomTypes.length}</div>
+                    <div class="text-xs text-blue-700">Elements</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Ensemble statistics - handle cases where relative_energy_kcal_mol might be missing
+    const allEnergies = conformers.map(c => c.relative_energy_kcal_mol ?? 0).filter(e => e !== null);
+    const minEnergy = allEnergies.length > 0 ? Math.min(...allEnergies) : 0;
+    const maxEnergy = allEnergies.length > 0 ? Math.max(...allEnergies) : 0;
+    const avgEnergy = allEnergies.length > 0 ? allEnergies.reduce((a, b) => a + b, 0) / allEnergies.length : 0;
+    
+    html += `
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h4 class="font-medium text-green-900 mb-3">Conformer Ensemble</h4>
+            <div class="grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <div class="text-lg font-semibold text-green-900">${conformers.length}</div>
+                    <div class="text-xs text-green-700">Total Conformers</div>
+                </div>
+                <div>
+                    <div class="text-lg font-semibold text-green-900">${(maxEnergy - minEnergy).toFixed(2)}</div>
+                    <div class="text-xs text-green-700">Energy Range</div>
+                </div>
+                <div>
+                    <div class="text-lg font-semibold text-green-900">${avgEnergy.toFixed(2)}</div>
+                    <div class="text-xs text-green-700">Avg Energy</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Geometric properties
+    html += `
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 mb-3">Geometric Properties</h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">X-dimension:</span>
+                    <span class="font-mono">${xRange.toFixed(2)} Å</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Y-dimension:</span>
+                    <span class="font-mono">${yRange.toFixed(2)} Å</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Z-dimension:</span>
+                    <span class="font-mono">${zRange.toFixed(2)} Å</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Elements:</span>
+                    <span class="font-mono">${atomTypes.join(', ')}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    html += '</div>';
+    analysisDiv.innerHTML = html;
+    
+    // Re-initialize icons
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
+function add3DViewerControls() {
+    // Don't add redundant controls - use the existing viewer-controls instead
+    // Just setup the event listeners for the existing controls
+    setupViewerControlEvents();
+}
+
+function setupViewerControlEvents() {
+    // This function is no longer needed as event listeners are now properly set up
+    // in the DOMContentLoaded event handler
+}
+
+function updateCoordinate3DStyle(style) {
+    if (!window.currentCoordinateViewer) return;
+    
+    const viewer = window.currentCoordinateViewer;
+    
+    let styleConfig = {};
+    if (style === 'sphere') {
+        styleConfig = {stick: {radius: 0.15}, sphere: {radius: 0.3}};
+    } else if (style === 'stick') {
+        styleConfig = {stick: {radius: 0.15}};
+    } else if (style === 'cross') {
+        styleConfig = {sphere: {radius: 0.5}};
+    } else if (style === 'wireframe') {
+        styleConfig = {line: {linewidth: 2}};
+    } else {
+        styleConfig = {stick: {radius: 0.15}, sphere: {radius: 0.3}};
+    }
+    
+    // Apply current color scheme
+    const colorScheme = document.getElementById('color-scheme')?.value || 'element';
+    let colors;
+    switch (colorScheme) {
+        case 'rainbow':
+            colors = $3Dmol.elementColors.rasmol;
+            break;
+        case 'uniform':
+            colors = {default: 'white'};
+            break;
+        case 'depth':
+            colors = $3Dmol.elementColors.greenCarbon;
+            break;
+        default:
+            colors = $3Dmol.elementColors.Jmol;
+    }
+    
+    Object.keys(styleConfig).forEach(key => {
+        styleConfig[key].colorscheme = colors;
+    });
+    
+    viewer.setStyle({}, styleConfig);
+    viewer.render();
+}
+
+function updateCoordinate3DColor(colorScheme) {
+    if (!window.currentCoordinateViewer) return;
+    
+    const viewer = window.currentCoordinateViewer;
+    
+    let colors;
+    switch (colorScheme) {
+        case 'rainbow':
+            colors = $3Dmol.elementColors.rasmol;
+            break;
+        case 'uniform':
+            colors = {default: 'white'};
+            break;
+        case 'depth':
+            colors = $3Dmol.elementColors.greenCarbon;
+            break;
+        default:
+            colors = $3Dmol.elementColors.Jmol;
+    }
+    
+    // Get current style
+    const renderStyle = document.getElementById('render-style')?.value || 'sphere';
+    let styleConfig = {};
+    if (renderStyle === 'sphere') {
+        styleConfig = {stick: {radius: 0.15, colorscheme: colors}, sphere: {radius: 0.3, colorscheme: colors}};
+    } else if (renderStyle === 'stick') {
+        styleConfig = {stick: {radius: 0.15, colorscheme: colors}};
+    } else if (renderStyle === 'cross') {
+        styleConfig = {cross: {radius: 0.1, colorscheme: colors}};
+    } else if (renderStyle === 'line') {
+        styleConfig = {line: {linewidth: 2, colorscheme: colors}};
+    } else {
+        styleConfig = {stick: {radius: 0.15, colorscheme: colors}, sphere: {radius: 0.3, colorscheme: colors}};
+    }
+    
+    viewer.setStyle({}, styleConfig);
+    viewer.render();
+}
+
+function resetCoordinate3DView() {
+    if (window.currentCoordinateViewer) {
+        window.currentCoordinateViewer.center();
+        window.currentCoordinateViewer.zoomTo();
+        window.currentCoordinateViewer.render();
+    }
+}
+
+function updateCoordinate3DBackground(bgColor) {
+    if (!window.currentCoordinateViewer) return;
+    
+    const viewer = window.currentCoordinateViewer;
+    
+    // Map color names to actual colors for 3Dmol
+    const colorMap = {
+        'white': 'white',
+        'black': 'black',
+        'gray': '#808080',
+        'transparent': 'transparent'
+    };
+    
+    const actualColor = colorMap[bgColor] || bgColor;
+    viewer.setBackgroundColor(actualColor);
+    viewer.render();
+}
+
+function updateConformerViewer() {
+    const conformerSelector = document.getElementById('conformer-selector');
+    if (!conformerSelector || !window.currentCoordinateData?.conformers) return;
+    
+    const selectedIndex = parseInt(conformerSelector.value);
+    const conformers = window.currentCoordinateData.conformers;
+    
+    if (selectedIndex >= 0 && selectedIndex < conformers.length && window.currentCoordinateViewer) {
+        const selectedConformer = conformers[selectedIndex];
+        
+        // Clear the current viewer and add the new conformer
+        const viewer = window.currentCoordinateViewer;
+        viewer.removeAllModels();
+        
+        // Convert coordinate data to XYZ format
+        let xyzData = `${selectedConformer.coordinates.length}\nConformer ${selectedIndex + 1}\n`;
+        for (const atom of selectedConformer.coordinates) {
+            xyzData += `${atom.symbol} ${atom.x.toFixed(6)} ${atom.y.toFixed(6)} ${atom.z.toFixed(6)}\n`;
+        }
+        
+        // Add the new conformer
+        viewer.addModel(xyzData, 'xyz');
+        
+        // Apply current style settings
+        const renderStyle = document.getElementById('render-style')?.value || 'sphere';
+        const colorScheme = document.getElementById('color-scheme')?.value || 'element';
+        
+        let styleConfig = {};
+        if (renderStyle === 'sphere') {
+            styleConfig = {stick: {radius: 0.15}, sphere: {radius: 0.3}};
+        } else if (renderStyle === 'stick') {
+            styleConfig = {stick: {radius: 0.15}};
+        } else if (renderStyle === 'cross') {
+            styleConfig = {cross: {radius: 0.1}};
+        } else if (renderStyle === 'line') {
+            styleConfig = {line: {linewidth: 2}};
+        } else {
+            styleConfig = {stick: {radius: 0.15}, sphere: {radius: 0.3}};
+        }
+        
+        // Apply color scheme
+        let colors;
+        switch (colorScheme) {
+            case 'rainbow':
+                colors = $3Dmol.elementColors.rasmol;
+                break;
+            case 'uniform':
+                colors = {default: 'white'};
+                break;
+            case 'depth':
+                colors = $3Dmol.elementColors.greenCarbon;
+                break;
+            default:
+                colors = $3Dmol.elementColors.Jmol;
+        }
+        
+        Object.keys(styleConfig).forEach(key => {
+            styleConfig[key].colorscheme = colors;
+        });
+        
+        viewer.setStyle({}, styleConfig);
+        viewer.render();
+        
+        // Update coordinate table if visible
+        updateCoordinateTable(selectedConformer.coordinates);
+        
+        // Update conformer info display if it exists
+        const info = document.querySelector('.conformer-info');
+        if (info && selectedConformer.energy !== undefined) {
+            info.textContent = `Conformer ${selectedIndex + 1}, Energy: ${selectedConformer.energy.toFixed(4)}`;
+        }
+    }
+}
+
+async function importCoordinatesFile() {
+    const fileInput = document.getElementById('coordinates-file-import');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        showAlert('Please select a file', 'warning');
+        return;
+    }
+
+    try {
+        // Show loading state
+        document.getElementById('coordinate-viewer').innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Importing coordinates from file...</p>
+                </div>
+            </div>
+        `;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/v1/coordinates/import_file', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            displayImportResults(data);
+            enableExportButtons();
+            window.lastCoordinateData = data;
+        } else {
+            showAlert(data.error || 'File import failed', 'danger');
+            resetViewer();
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+        resetViewer();
+    }
+}
+
+function displayImportResults(data) {
+    const viewerDiv = document.getElementById('coordinate-viewer');
+    const analysisDiv = document.getElementById('conformer-analysis');
+
+    // Store data globally
+    window.currentCoordinateData = data;
+
+    let html = `
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+            <div class="flex items-center mb-3">
+                <i data-lucide="check-circle" class="w-5 h-5 text-teal-600 mr-2"></i>
+                <h3 class="font-semibold text-gray-900">Imported Successfully</h3>
+            </div>
+    `;
+
+    if (data.molecules && data.molecules.length > 0) {
+        html += `
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div class="bg-gray-50 rounded-lg p-3 text-center">
+                    <div class="text-lg font-semibold text-gray-900">${data.molecules.length}</div>
+                    <div class="text-xs text-gray-600">Molecules Imported</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3 text-center">
+                    <div class="text-lg font-semibold text-gray-900">${data.has_3d_coords ? 'Yes' : 'No'}</div>
+                    <div class="text-xs text-gray-600">3D Coordinates</div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+        `;
+
+        // Show first 10 molecules
+        const displayMolecules = data.molecules.slice(0, 10);
+        displayMolecules.forEach((mol, idx) => {
+            html += `
+                <div class="border border-gray-200 rounded-lg p-3">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="text-sm font-medium text-gray-900">${mol.name || `Molecule ${idx + 1}`}</span>
+                            ${mol.has_3d_coords ? '<span class="ml-2 px-2 py-0.5 bg-teal-100 text-teal-800 text-xs rounded">3D</span>' : '<span class="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">2D</span>'}
+                        </div>
+                    </div>
+                    ${mol.smiles ? `<div class="text-xs text-gray-600 font-mono mb-2">${mol.smiles}</div>` : ''}
+                    ${mol.num_atoms ? `<div class="text-xs text-gray-500">${mol.num_atoms} atoms${mol.num_bonds ? `, ${mol.num_bonds} bonds` : ''}</div>` : ''}
+                </div>
+            `;
+        });
+
+        if (data.molecules.length > 10) {
+            html += `
+                <div class="text-center text-sm text-gray-600 py-2">
+                    ... and ${data.molecules.length - 10} more molecules
+                </div>
+            `;
+        }
+
+        html += `
+            </div>
+        `;
+    }
+
+    html += `</div>`;
+
+    viewerDiv.innerHTML = html;
+
+    // Initialize lucide icons for the new content
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+
+    // Show viewer controls
+    document.getElementById('viewer-controls').classList.remove('hidden');
+
+    // Display 3D structure if first molecule has 3D coordinates
+    if (data.molecules && data.molecules.length > 0 && data.molecules[0].has_3d_coords) {
+        // If we have mol_block, display it
+        if (data.molecules[0].mol_block) {
+            const firstMol = data.molecules[0];
+            displayMolecularStructure({
+                mol_block: firstMol.mol_block,
+                smiles: firstMol.smiles
+            }, firstMol.smiles || 'Imported', 'imported');
+        }
+    }
+}
+</script>
+{% endblock %}

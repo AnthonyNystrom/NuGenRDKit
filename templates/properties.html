@@ -1,0 +1,1405 @@
+{% extends "base.html" %}
+
+{% block title %}Molecular Properties - NuGenRDKit{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex items-center space-x-3 mb-4">
+            <div class="flex items-center justify-center w-12 h-12 bg-pink-100 rounded-lg">
+                <i data-lucide="flask-conical" class="w-6 h-6 text-pink-600"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Molecular Properties</h1>
+                <p class="text-gray-600">Analyze drug-likeness, ADMET properties, and molecular characteristics</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Input Section -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                    <i data-lucide="flask-conical" class="w-5 h-5 mr-2"></i>
+                    Property Analysis
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="property-input" class="block text-sm font-medium text-gray-700 mb-2">
+                            SMILES String
+                        </label>
+                        <input type="text" 
+                               id="property-input" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                               placeholder="e.g., aspirin" 
+                               value="CC(=O)OC1=CC=CC=C1C(=O)O">
+                    </div>
+                    
+                    <div>
+                        <label for="property-type" class="block text-sm font-medium text-gray-700 mb-2">
+                            Analysis Type
+                        </label>
+                        <select id="property-type"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+                            <optgroup label="Basic Properties">
+                                <option value="physicochemical">Physicochemical</option>
+                                <option value="drug_likeness">Drug-likeness (Lipinski, Veber, Egan, Muegge)</option>
+                                <option value="qed">QED (Quantitative Drug-likeness)</option>
+                            </optgroup>
+                            <optgroup label="Structural Analysis">
+                                <option value="fragments">Fragments</option>
+                                <option value="brics">BRICS Decomposition (Retrosynthesis)</option>
+                                <option value="recap">RECAP Decomposition (Retrosynthesis)</option>
+                                <option value="aromaticity">Aromaticity</option>
+                                <option value="stereochemistry">Stereochemistry</option>
+                            </optgroup>
+                            <optgroup label="Predictions">
+                                <option value="admet">ADMET Predictions</option>
+                                <option value="all">Comprehensive Analysis</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <!-- Batch File Upload -->
+                    <div class="bg-pink-50 border border-pink-200 rounded-lg p-3">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="upload" class="w-4 h-4 mr-2 text-pink-600"></i>
+                            <span class="text-sm font-medium text-pink-900">Batch: Upload molecule file</span>
+                        </div>
+                        <input type="file"
+                               id="batch-properties-file"
+                               accept=".smi,.smiles,.sdf,.csv,.txt"
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100">
+                        <div class="mt-2 flex items-center space-x-2">
+                            <label class="text-xs text-gray-600">Export as:</label>
+                            <select id="properties-export-format" class="text-xs border-gray-300 rounded px-2 py-1">
+                                <option value="json">JSON</option>
+                                <option value="csv">CSV</option>
+                            </select>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-1">Analyze properties for drug screening (.smi, .sdf, .csv - max 50 MB)</p>
+                    </div>
+
+                    <button id="analyze-btn" 
+                            class="w-full inline-flex items-center justify-center px-4 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors">
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                        Analyze Properties
+                    </button>
+                </div>
+
+                <!-- Drug Categories -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Drug Examples</h3>
+                    <div class="space-y-2">
+                        <button class="example-drug w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CC(=O)OC1=CC=CC=C1C(=O)O" data-name="Aspirin">
+                            Aspirin (NSAID)
+                        </button>
+                        <button class="example-drug w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CN1C=NC2=C1C(=O)N(C(=O)N2C)C" data-name="Caffeine">
+                            Caffeine (Stimulant)
+                        </button>
+                        <button class="example-drug w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CC(C)CC1=CC=C(C=C1)C(C)C(=O)O" data-name="Ibuprofen">
+                            Ibuprofen (NSAID)
+                        </button>
+                        <button class="example-drug w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CC12CCC3C(C1CCC2O)CCC4=CC(=O)CCC34C" data-name="Testosterone">
+                            Testosterone (Hormone)
+                        </button>
+                        <button class="example-drug w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CN1CCN(CC1)C2=C(C(=CC=C2)Cl)C3=CC=CC=C3C(=O)O" data-name="Diclofenac">
+                            Diclofenac (NSAID)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Export Options -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Export Options</h3>
+                    <div class="space-y-2">
+                        <button id="export-report-btn" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                                disabled>
+                            <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                            Export Report
+                        </button>
+                        <button id="export-json-btn" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                                disabled>
+                            <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                            Export JSON
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="lg:col-span-2">
+            <div class="space-y-6">
+                <!-- Property Dashboard -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                            <i data-lucide="chart-line" class="w-5 h-5 mr-2"></i>
+                            Property Dashboard
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <span id="analysis-status" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                Ready
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div id="property-results" class="property-dashboard min-h-[400px]">
+                        <div class="flex items-center justify-center h-96 text-gray-500">
+                            <div class="text-center">
+                                <i data-lucide="flask-conical" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                                <p class="text-lg font-medium">Ready to analyze properties</p>
+                                <p class="text-sm">Enter a SMILES string and select analysis type</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drug-likeness Rules -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <i data-lucide="shield-check" class="w-5 h-5 mr-2"></i>
+                        Drug-likeness Assessment
+                    </h3>
+                    
+                    <div id="drug-likeness-results" class="min-h-[200px]">
+                        <div class="flex items-center justify-center h-32 text-gray-500">
+                            <div class="text-center">
+                                <i data-lucide="shield" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                                <p class="text-sm">Drug-likeness assessment will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Molecular Structure Display -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <i data-lucide="eye" class="w-5 h-5 mr-2"></i>
+                        Molecular Structure
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">2D Structure</h4>
+                            <div id="structure-2d" class="bg-gray-50 rounded-lg p-4 h-64 flex items-center justify-center">
+                                <span class="text-gray-400">Structure will appear here</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Property Summary</h4>
+                            <div id="property-summary" class="bg-gray-50 rounded-lg p-4 h-64 flex items-center justify-center">
+                                <span class="text-gray-400">Summary will appear here</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for SMILES parameter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const smilesParam = urlParams.get('smiles');
+    if (smilesParam) {
+        document.getElementById('property-input').value = smilesParam;
+        // Auto-analyze if SMILES was provided
+        analyzeProperties();
+        return; // Skip the normal auto-analyze at the bottom
+    }
+    
+    // Analyze button handler
+    document.getElementById('analyze-btn').addEventListener('click', function() {
+        analyzeProperties();
+    });
+    
+    // Analysis type dropdown change handler
+    document.getElementById('property-type').addEventListener('change', function() {
+        const smiles = document.getElementById('property-input').value.trim();
+        if (smiles) {
+            analyzeProperties();
+        }
+    });
+    
+    // Export button handlers
+    document.getElementById('export-report-btn').addEventListener('click', function() {
+        exportReport();
+    });
+    document.getElementById('export-json-btn').addEventListener('click', function() {
+        exportJSON();
+    });
+    
+    // Example drug handlers
+    document.querySelectorAll('.example-drug').forEach(button => {
+        button.addEventListener('click', function() {
+            const smiles = this.getAttribute('data-smiles');
+            const name = this.getAttribute('data-name');
+            document.getElementById('property-input').value = smiles;
+            analyzeProperties();
+        });
+    });
+    
+    // Auto-analyze on page load if there's input
+    const initialSmiles = document.getElementById('property-input').value.trim();
+    if (initialSmiles) {
+        analyzeProperties();
+    }
+});
+
+async function analyzeProperties() {
+    const smiles = document.getElementById('property-input').value.trim();
+    const analysisType = document.getElementById('property-type').value;
+    const fileInput = document.getElementById('batch-properties-file');
+
+    // Check if file upload is being used
+    if (fileInput && fileInput.files.length > 0) {
+        await analyzeBatchProperties();
+        return;
+    }
+
+    if (!smiles) {
+        showAlert('Please enter a SMILES string', 'warning');
+        return;
+    }
+    
+    // Basic SMILES validation
+    if (smiles.length < 2) {
+        showAlert('SMILES string appears too short to be valid', 'warning');
+        return;
+    }
+    
+    // Check for common invalid characters
+    const invalidChars = /[^a-zA-Z0-9\[\]()=+\-#@\.\/\\]/;
+    if (invalidChars.test(smiles)) {
+        showAlert('SMILES string contains invalid characters', 'warning');
+        return;
+    }
+    
+    try {
+        // Update status
+        const statusSpan = document.getElementById('analysis-status');
+        statusSpan.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800';
+        statusSpan.textContent = 'Analyzing...';
+        
+        // Show loading state
+        document.getElementById('property-results').innerHTML = `
+            <div class="flex items-center justify-center h-64">
+                <div class="text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Analyzing molecular properties...</p>
+                </div>
+            </div>
+        `;
+        
+        // Make API request
+        const response = await fetch(`/api/v1/properties/${analysisType}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ smiles })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayProperties(data, smiles, analysisType);
+            loadMolecularStructure(smiles);
+            enableExportButtons();
+            
+            statusSpan.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
+            statusSpan.textContent = 'Complete';
+            
+            window.lastPropertyData = data; // Store for export
+        } else {
+            showAlert(data.error || 'Analysis failed', 'danger');
+            resetResults();
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+        resetResults();
+    }
+}
+
+function displayProperties(data, smiles, analysisType) {
+    const resultsDiv = document.getElementById('property-results');
+    const properties = data.properties || {};
+
+    // Generate a more meaningful compound name
+    let compoundName = data.name;
+    if (!compoundName) {
+        if (properties.molecular_formula) {
+            compoundName = `Compound ${properties.molecular_formula}`;
+        } else if (properties.molecular_weight) {
+            compoundName = `Molecule (MW ${properties.molecular_weight?.toFixed(1)})`;
+        } else {
+            compoundName = `Molecule`;
+        }
+    }
+    
+    let html = '<div class="space-y-6">';
+    
+    // Molecule Info Header
+    html += `
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-blue-900">
+                        ${compoundName}
+                    </h3>
+                    <code class="text-sm text-blue-700 bg-blue-100 px-2 py-1 rounded">${smiles}</code>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-blue-700">Analysis Type</div>
+                    <div class="text-lg font-semibold text-blue-900">${analysisType.replace('_', ' ').toUpperCase()}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Property Grid
+    if (analysisType === 'physicochemical' || analysisType === 'all') {
+        html += displayPhysicochemicalProperties(properties);
+    }
+    
+    if (analysisType === 'drug_likeness' || analysisType === 'all') {
+        html += displayDrugLikeness(properties);
+    }
+    
+    if (analysisType === 'fragments' || analysisType === 'all') {
+        html += displayFragmentAnalysis(properties);
+    }
+    
+    if (analysisType === 'aromaticity' || analysisType === 'all') {
+        html += displayAromaticityAnalysis(properties);
+    }
+    
+    if (analysisType === 'stereochemistry' || analysisType === 'all') {
+        html += displayStereochemistryAnalysis(properties);
+    }
+    
+    if (analysisType === 'admet' || analysisType === 'all') {
+        html += displayADMETAnalysis(properties);
+    }
+
+    if (analysisType === 'qed') {
+        html += displayQEDAnalysis(properties);
+    }
+
+    if (analysisType === 'brics') {
+        html += displayBRICSAnalysis(data);
+    }
+
+    if (analysisType === 'recap') {
+        html += displayRECAPAnalysis(data);
+    }
+
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+
+    // Display drug-likeness assessment separately (not for BRICS/RECAP)
+    if (analysisType !== 'brics' && analysisType !== 'recap') {
+        displayDrugLikenessAssessment(properties);
+    }
+}
+
+function displayPhysicochemicalProperties(properties) {
+    return `
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i data-lucide="atom" class="w-5 h-5 mr-2"></i>
+                Physicochemical Properties
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                ${Object.entries({
+                    'Molecular Weight': properties.molecular_weight,
+                    'Heavy Atoms': properties.heavy_atom_count,
+                    'H Donors': properties.num_h_donors,
+                    'H Acceptors': properties.num_h_acceptors,
+                    'LogP': properties.logp,
+                    'TPSA': properties.tpsa,
+                    'Rotatable Bonds': properties.num_rotatable_bonds,
+                    'Rings': properties.num_rings
+                }).map(([key, value]) => `
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <div class="text-lg font-semibold text-gray-900">
+                            ${typeof value === 'number' ? value.toFixed(value < 1 ? 3 : 1) : (value || 'N/A')}
+                        </div>
+                        <div class="text-xs text-gray-600">${key}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function displayDrugLikeness(properties) {
+    const rules = {
+        'Lipinski': {
+            'MW ≤ 500': properties.molecular_weight <= 500,
+            'LogP ≤ 5': properties.logp <= 5,
+            'HBD ≤ 5': properties.num_h_donors <= 5,
+            'HBA ≤ 10': properties.num_h_acceptors <= 10
+        },
+        'Veber': {
+            'TPSA ≤ 140': properties.tpsa <= 140,
+            'RotBonds ≤ 10': properties.num_rotatable_bonds <= 10
+        },
+        'Egan': {
+            'LogP ≤ 5.88': properties.logp <= 5.88,
+            'TPSA ≤ 131.6': properties.tpsa <= 131.6
+        }
+    };
+    
+    return `
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i data-lucide="flask-conical" class="w-5 h-5 mr-2"></i>
+                Drug-likeness Rules
+            </h4>
+            <div class="space-y-4">
+                ${Object.entries(rules).map(([ruleName, criteria]) => {
+                    const passed = Object.values(criteria).filter(Boolean).length;
+                    const total = Object.keys(criteria).length;
+                    const passRate = passed / total;
+                    
+                    return `
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h5 class="font-medium text-gray-900">${ruleName} Rule</h5>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    passRate >= 0.8 ? 'bg-green-100 text-green-800' :
+                                    passRate >= 0.6 ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-red-100 text-red-800'
+                                }">
+                                    ${passed}/${total} passed
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                ${Object.entries(criteria).map(([criterion, passed]) => `
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-600">${criterion}</span>
+                                        <i data-lucide="${passed ? 'check' : 'x'}" class="w-4 h-4 ${passed ? 'text-green-600' : 'text-red-600'}"></i>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function displayFragmentAnalysis(properties) {
+    // Handle both fragment-specific data and comprehensive data
+    const fragments = properties.fragments || {};
+    const totalFragments = properties.total_fragments || Object.values(fragments).reduce((sum, val) => sum + (val || 0), 0);
+    
+    let html = `
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i data-lucide="package" class="w-5 h-5 mr-2"></i>
+                Fragment Analysis
+            </h4>
+            
+            <!-- Ring Analysis -->
+            <div class="mb-6">
+                <h5 class="text-sm font-medium text-gray-700 mb-3">Ring Analysis</h5>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    ${Object.entries({
+                        'Aromatic Rings': properties.num_aromatic_rings || 0,
+                        'Aliphatic Rings': properties.num_aliphatic_rings || 0,
+                        'Saturated Rings': properties.num_saturated_rings || 0,
+                        'Heterocycles': properties.num_heterocycles || 0,
+                        'Carbocycles': properties.num_carbocycles || 0,
+                        'Bridgehead Atoms': properties.num_bridgehead_atoms || 0
+                    }).map(([key, value]) => `
+                        <div class="bg-gray-50 rounded-lg p-3 text-center">
+                            <div class="text-lg font-semibold text-gray-900">${value}</div>
+                            <div class="text-xs text-gray-600">${key}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+    `;
+    
+    // Only show fragment details if we have fragment data
+    if (Object.keys(fragments).length > 0) {
+        html += `
+            <!-- Molecular Fragments -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h5 class="text-sm font-medium text-gray-700">Molecular Fragments</h5>
+                    <span class="text-sm text-gray-600">Total: ${totalFragments}</span>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        `;
+        
+        const fragmentEntries = Object.entries(fragments).filter(([_, value]) => value !== null && value > 0);
+        
+        if (fragmentEntries.length > 0) {
+            fragmentEntries.forEach(([key, value]) => {
+                const cleanKey = key.replace(/^fr_/, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                html += `
+                    <div class="bg-blue-50 rounded-lg p-2 text-center border border-blue-200">
+                        <div class="text-sm font-semibold text-blue-900">${value}</div>
+                        <div class="text-xs text-blue-700">${cleanKey}</div>
+                    </div>
+                `;
+            });
+        } else {
+            html += `
+                <div class="col-span-full text-center text-gray-500 text-sm py-4">
+                    No specific fragments detected
+                </div>
+            `;
+        }
+        
+        html += '</div></div>';
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+function displayAromaticityAnalysis(properties) {
+    const aromaticAtoms = properties.num_aromatic_atoms || 0;
+    const aromaticBonds = properties.num_aromatic_bonds || 0;
+    const aromaticRings = properties.num_aromatic_rings || 0;
+    const heavyAtoms = properties.heavy_atom_count || properties.num_heavy_atoms || 1;
+    const aromaticityRatio = heavyAtoms > 0 ? (aromaticAtoms / heavyAtoms * 100).toFixed(1) : '0.0';
+    const fractionAromatic = properties.fraction_aromatic_atoms || (aromaticAtoms / heavyAtoms);
+    
+    return `
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i data-lucide="hexagon" class="w-5 h-5 mr-2"></i>
+                Aromaticity Analysis
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                ${[
+                    ['Aromatic Atoms', aromaticAtoms],
+                    ['Aromatic Bonds', aromaticBonds], 
+                    ['Aromatic Rings', aromaticRings],
+                    ['Aromaticity Ratio', aromaticityRatio + '%']
+                ].map(([key, value]) => `
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <div class="text-lg font-semibold text-gray-900">${value}</div>
+                        <div class="text-xs text-gray-600">${key}</div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            ${aromaticRings > 0 ? `
+                <div class="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i data-lucide="info" class="w-4 h-4 text-purple-600 mr-2"></i>
+                        <span class="text-sm text-purple-800">
+                            This molecule contains ${aromaticRings} aromatic ring${aromaticRings > 1 ? 's' : ''} 
+                            with ${(fractionAromatic * 100).toFixed(1)}% aromatic character.
+                        </span>
+                    </div>
+                </div>
+            ` : `
+                <div class="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i data-lucide="info" class="w-4 h-4 text-gray-600 mr-2"></i>
+                        <span class="text-sm text-gray-700">
+                            This molecule has no aromatic rings.
+                        </span>
+                    </div>
+                </div>
+            `}
+        </div>
+    `;
+}
+
+function displayStereochemistryAnalysis(properties) {
+    const stereocenters = properties.num_stereocenters || 0;
+    const unspecifiedCenters = properties.num_undefined_stereocenters || 0;
+    const isChiral = properties.is_chiral || stereocenters > 0;
+    const stereoisomers = stereocenters > 0 ? Math.pow(2, stereocenters) : 1;
+    const stereoBonds = properties.num_stereo_bonds || 0;
+    
+    let html = `
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i data-lucide="rotate-3d" class="w-5 h-5 mr-2"></i>
+                Stereochemistry Analysis
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                ${[
+                    ['Chiral Centers', stereocenters],
+                    ['Stereo Bonds', stereoBonds],
+                    ['Possible Isomers', stereoisomers],
+                    ['Chirality', isChiral ? 'Chiral' : 'Achiral']
+                ].map(([key, value]) => `
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <div class="text-lg font-semibold text-gray-900">${value}</div>
+                        <div class="text-xs text-gray-600">${key}</div>
+                    </div>
+                `).join('')}
+            </div>
+    `;
+    
+    // Add detailed information based on stereochemistry
+    if (isChiral) {
+        html += `
+            <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-center">
+                    <i data-lucide="info" class="w-4 h-4 text-blue-600 mr-2"></i>
+                    <span class="text-sm text-blue-800">
+                        This molecule is chiral with ${stereocenters} stereogenic center${stereocenters > 1 ? 's' : ''}
+                        ${unspecifiedCenters > 0 ? `, of which ${unspecifiedCenters} have unspecified configuration` : ''}.
+                        ${stereoisomers > 1 ? ` It can exist as ${stereoisomers} stereoisomers.` : ''}
+                    </span>
+                </div>
+            </div>
+        `;
+    } else {
+        html += `
+            <div class="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <div class="flex items-center">
+                    <i data-lucide="info" class="w-4 h-4 text-gray-600 mr-2"></i>
+                    <span class="text-sm text-gray-700">
+                        This molecule is achiral and has no stereocenters.
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+function displayADMETAnalysis(properties) {
+    // Handle both simple and complex ADMET data structures
+    const admetData = properties.admet_predictions || {
+        absorption: {
+            'Human Intestinal Absorption': properties.tpsa <= 140 && properties.molecular_weight <= 500 ? 'High' : 'Low',
+            'Bioavailability Score': properties.num_rotatable_bonds <= 10 && properties.tpsa <= 140 ? '0.85' : '0.45'
+        },
+        distribution: {
+            'BBB Permeation': properties.logp <= 3 && properties.tpsa <= 90 ? 'High' : 'Low',
+            'CNS Permeation': properties.logp <= 3 && properties.tpsa <= 76 ? 'High' : 'Low'
+        },
+        metabolism: {
+            'CYP3A4 Substrate': properties.molecular_weight > 300 && properties.logp > 2 ? 'Likely' : 'Unlikely'
+        },
+        excretion: {
+            'Renal Clearance': properties.tpsa > 75 && properties.logp < 2 ? 'High' : 'Low'
+        },
+        toxicity: {
+            'Hepatotoxicity': properties.logp > 3 || properties.molecular_weight > 500 ? 'Risk' : 'Low Risk'
+        }
+    };
+    
+    let html = `
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i data-lucide="activity" class="w-5 h-5 mr-2"></i>
+                ADMET Predictions
+            </h4>
+    `;
+    
+    // Display ADMET score if available
+    if (properties.admet_score !== undefined) {
+        const scoreColor = properties.admet_score >= 0.7 ? 'text-green-600 bg-green-100' :
+                          properties.admet_score >= 0.5 ? 'text-yellow-600 bg-yellow-100' :
+                          'text-red-600 bg-red-100';
+        
+        html += `
+            <div class="mb-4 p-3 ${scoreColor} rounded-lg">
+                <div class="flex items-center justify-between">
+                    <span class="font-medium">Overall ADMET Score</span>
+                    <span class="text-xl font-bold">${(properties.admet_score * 100).toFixed(0)}%</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Display ADMET categories
+    html += '<div class="space-y-4">';
+    
+    for (const [category, predictions] of Object.entries(admetData)) {
+        html += `
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h5 class="font-medium text-gray-900 mb-3 capitalize">${category}</h5>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        `;
+        
+        for (const [key, value] of Object.entries(predictions)) {
+            const cleanKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const valueColor = getADMETValueColor(value);
+            
+            html += `
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <span class="text-sm text-gray-700">${cleanKey}</span>
+                    <span class="text-sm font-medium ${valueColor}">${value}</span>
+                </div>
+            `;
+        }
+        
+        html += '</div></div>';
+    }
+    
+    html += `
+            </div>
+            <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p class="text-sm text-blue-800">
+                    <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+                    ADMET predictions are based on empirical rules and should be validated experimentally.
+                </p>
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+function getADMETValueColor(value) {
+    const positiveValues = ['High', 'Good', 'Non-mutagenic', 'Low Risk', 'Unlikely'];
+    const neutralValues = ['Medium', 'Likely', 'Moderate'];
+    const negativeValues = ['Low', 'Poor', 'Risk', 'Alert'];
+    
+    if (positiveValues.includes(value)) return 'text-green-600';
+    if (neutralValues.includes(value)) return 'text-yellow-600';
+    if (negativeValues.includes(value)) return 'text-red-600';
+    
+    // For numeric values
+    if (typeof value === 'string' && !isNaN(parseFloat(value))) {
+        const numValue = parseFloat(value);
+        if (numValue >= 0.7) return 'text-green-600';
+        if (numValue >= 0.4) return 'text-yellow-600';
+        return 'text-red-600';
+    }
+    
+    return 'text-gray-900';
+}
+
+function displayQEDAnalysis(properties) {
+    const qed = properties.qed || {};
+    const qedScore = qed.qed || properties.qed_score || 0;
+
+    const getQEDColor = (score) => {
+        if (score >= 0.7) return 'text-green-600 bg-green-100 border-green-200';
+        if (score >= 0.5) return 'text-yellow-600 bg-yellow-100 border-yellow-200';
+        return 'text-red-600 bg-red-100 border-red-200';
+    };
+
+    const getQEDRating = (score) => {
+        if (score >= 0.7) return 'Excellent';
+        if (score >= 0.5) return 'Good';
+        if (score >= 0.3) return 'Fair';
+        return 'Poor';
+    };
+
+    return `
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i data-lucide="star" class="w-5 h-5 mr-2"></i>
+                QED - Quantitative Estimate of Drug-likeness
+            </h4>
+
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-32 h-32 rounded-full border-4 ${getQEDColor(qedScore)} mb-3">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold">${qedScore.toFixed(3)}</div>
+                        <div class="text-xs uppercase">QED Score</div>
+                    </div>
+                </div>
+                <h5 class="text-lg font-semibold text-gray-900">${getQEDRating(qedScore)} Drug-likeness</h5>
+                <p class="text-sm text-gray-600 mt-1">Based on desirability functions for 8 molecular properties</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                ${Object.entries({
+                    'MW': qed.MW || properties.molecular_weight,
+                    'ALOGP': qed.ALOGP || properties.logp,
+                    'HBA': qed.HBA || properties.num_h_acceptors,
+                    'HBD': qed.HBD || properties.num_h_donors,
+                    'PSA': qed.PSA || properties.tpsa,
+                    'ROTB': qed.ROTB || properties.num_rotatable_bonds,
+                    'AROM': qed.AROM || properties.num_aromatic_rings,
+                    'ALERTS': qed.ALERTS || 0
+                }).map(([key, value]) => `
+                    <div class="bg-gray-50 rounded-lg p-3 text-center">
+                        <div class="text-lg font-semibold text-gray-900">
+                            ${typeof value === 'number' ? value.toFixed(value < 1 ? 2 : 1) : (value || 'N/A')}
+                        </div>
+                        <div class="text-xs text-gray-600">${key}</div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-center">
+                    <i data-lucide="info" class="w-4 h-4 text-blue-600 mr-2"></i>
+                    <span class="text-sm text-blue-800">
+                        QED ranges from 0 (unfavorable) to 1 (most favorable). Values above 0.67 indicate high drug-likeness.
+                    </span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function displayBRICSAnalysis(data) {
+    const fragments = data.fragments || [];
+    const numFragments = data.num_fragments || fragments.length;
+    const smiles = data.smiles || '';
+
+    return `
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i data-lucide="scissors" class="w-5 h-5 mr-2"></i>
+                BRICS Decomposition (Retrosynthesis)
+            </h4>
+
+            <div class="mb-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h5 class="font-medium text-purple-900">Original Molecule</h5>
+                        <code class="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded">${smiles}</code>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-purple-900">${numFragments}</div>
+                        <div class="text-xs text-purple-700">Fragments</div>
+                    </div>
+                </div>
+            </div>
+
+            ${fragments.length > 0 ? `
+                <div class="space-y-2 max-h-96 overflow-y-auto">
+                    <h5 class="text-sm font-medium text-gray-700 mb-3">Retrosynthetic Fragments</h5>
+                    ${fragments.map((frag, idx) => `
+                        <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-medium text-purple-900">Fragment ${idx + 1}</span>
+                                <code class="text-xs text-purple-800 font-mono">${frag}</code>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : `
+                <div class="text-center py-8 text-gray-500">
+                    <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                    <p class="text-sm">No BRICS fragments generated</p>
+                </div>
+            `}
+
+            <div class="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                <div class="flex items-center">
+                    <i data-lucide="info" class="w-4 h-4 text-purple-600 mr-2"></i>
+                    <span class="text-sm text-purple-800">
+                        BRICS (Breaking of Retrosynthetically Interesting Chemical Substructures) identifies strategic bond disconnections for synthesis planning.
+                    </span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function displayRECAPAnalysis(data) {
+    const fragments = data.fragments || [];
+    const numFragments = data.num_fragments || fragments.length;
+    const smiles = data.smiles || '';
+
+    return `
+        <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i data-lucide="git-branch" class="w-5 h-5 mr-2"></i>
+                RECAP Decomposition (Retrosynthesis)
+            </h4>
+
+            <div class="mb-4 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h5 class="font-medium text-teal-900">Original Molecule</h5>
+                        <code class="text-xs text-teal-700 bg-teal-100 px-2 py-1 rounded">${smiles}</code>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-teal-900">${numFragments}</div>
+                        <div class="text-xs text-teal-700">Fragments</div>
+                    </div>
+                </div>
+            </div>
+
+            ${fragments.length > 0 ? `
+                <div class="space-y-2 max-h-96 overflow-y-auto">
+                    <h5 class="text-sm font-medium text-gray-700 mb-3">Retrosynthetic Fragments</h5>
+                    ${fragments.map((frag, idx) => `
+                        <div class="p-3 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-medium text-teal-900">Fragment ${idx + 1}</span>
+                                <code class="text-xs text-teal-800 font-mono">${frag}</code>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : `
+                <div class="text-center py-8 text-gray-500">
+                    <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                    <p class="text-sm">No RECAP fragments generated</p>
+                </div>
+            `}
+
+            <div class="mt-4 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+                <div class="flex items-center">
+                    <i data-lucide="info" class="w-4 h-4 text-teal-600 mr-2"></i>
+                    <span class="text-sm text-teal-800">
+                        RECAP (Retrosynthetic Combinatorial Analysis Procedure) systematically fragments molecules at strategic chemical bonds.
+                    </span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function displayDrugLikenessAssessment(properties) {
+    const assessmentDiv = document.getElementById('drug-likeness-results');
+    
+    // Calculate overall score
+    const lipinskiScore = [
+        properties.molecular_weight <= 500,
+        properties.logp <= 5,
+        properties.num_h_donors <= 5,
+        properties.num_h_acceptors <= 10
+    ].filter(Boolean).length / 4;
+    
+    const veberScore = [
+        properties.tpsa <= 140,
+        properties.num_rotatable_bonds <= 10
+    ].filter(Boolean).length / 2;
+    
+    const overallScore = (lipinskiScore + veberScore) / 2;
+    
+    const getScoreColor = (score) => {
+        if (score >= 0.8) return 'text-green-600 bg-green-100';
+        if (score >= 0.6) return 'text-yellow-600 bg-yellow-100';
+        return 'text-red-600 bg-red-100';
+    };
+    
+    const getScoreText = (score) => {
+        if (score >= 0.8) return 'Excellent';
+        if (score >= 0.6) return 'Good';
+        if (score >= 0.4) return 'Fair';
+        return 'Poor';
+    };
+    
+    assessmentDiv.innerHTML = `
+        <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-24 h-24 rounded-full ${getScoreColor(overallScore)} mb-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold">${Math.round(overallScore * 100)}</div>
+                    <div class="text-xs">Score</div>
+                </div>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900">${getScoreText(overallScore)} Drug-likeness</h3>
+            <p class="text-gray-600">Based on Lipinski and Veber rules</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h4 class="font-medium text-gray-900 mb-3">Key Advantages</h4>
+                <ul class="space-y-2 text-sm">
+                    ${properties.molecular_weight <= 500 ? '<li class="flex items-center text-green-700"><i data-lucide="check" class="w-4 h-4 mr-2"></i>Appropriate molecular weight</li>' : ''}
+                    ${properties.logp <= 5 ? '<li class="flex items-center text-green-700"><i data-lucide="check" class="w-4 h-4 mr-2"></i>Good lipophilicity balance</li>' : ''}
+                    ${properties.tpsa <= 140 ? '<li class="flex items-center text-green-700"><i data-lucide="check" class="w-4 h-4 mr-2"></i>Favorable polar surface area</li>' : ''}
+                    ${properties.num_rotatable_bonds <= 10 ? '<li class="flex items-center text-green-700"><i data-lucide="check" class="w-4 h-4 mr-2"></i>Good flexibility profile</li>' : ''}
+                </ul>
+            </div>
+            
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h4 class="font-medium text-gray-900 mb-3">Areas of Concern</h4>
+                <ul class="space-y-2 text-sm">
+                    ${properties.molecular_weight > 500 ? '<li class="flex items-center text-red-700"><i data-lucide="x" class="w-4 h-4 mr-2"></i>High molecular weight</li>' : ''}
+                    ${properties.logp > 5 ? '<li class="flex items-center text-red-700"><i data-lucide="x" class="w-4 h-4 mr-2"></i>High lipophilicity</li>' : ''}
+                    ${properties.tpsa > 140 ? '<li class="flex items-center text-red-700"><i data-lucide="x" class="w-4 h-4 mr-2"></i>Large polar surface area</li>' : ''}
+                    ${properties.num_rotatable_bonds > 10 ? '<li class="flex items-center text-red-700"><i data-lucide="x" class="w-4 h-4 mr-2"></i>Too many rotatable bonds</li>' : ''}
+                    ${overallScore >= 0.8 ? '<li class="text-gray-600">No major concerns identified</li>' : ''}
+                </ul>
+            </div>
+        </div>
+    `;
+    
+    // Re-initialize icons
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
+async function loadMolecularStructure(smiles) {
+    const structure2D = document.getElementById('structure-2d');
+    const propertySummary = document.getElementById('property-summary');
+    
+    try {
+        const response = await fetch('/api/v1/visualization/draw_svg', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ smiles, width: 250, height: 200 })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            structure2D.innerHTML = data.svg;
+        }
+    } catch (error) {
+        console.warn('Failed to load structure:', error);
+    }
+    
+    // Display property summary
+    if (window.lastPropertyData && window.lastPropertyData.properties) {
+        const props = window.lastPropertyData.properties;
+        propertySummary.innerHTML = `
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Formula</span>
+                    <span class="font-mono text-sm">${props.molecular_formula || 'N/A'}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">MW</span>
+                    <span class="font-mono text-sm">${props.molecular_weight?.toFixed(2) || 'N/A'} Da</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">LogP</span>
+                    <span class="font-mono text-sm">${props.logp?.toFixed(2) || 'N/A'}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">TPSA</span>
+                    <span class="font-mono text-sm">${props.tpsa?.toFixed(1) || 'N/A'} Ų</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">HBA</span>
+                    <span class="font-mono text-sm">${props.num_h_acceptors || 'N/A'}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">HBD</span>
+                    <span class="font-mono text-sm">${props.num_h_donors || 'N/A'}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Rings</span>
+                    <span class="font-mono text-sm">${props.num_rings || 'N/A'}</span>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function enableExportButtons() {
+    document.getElementById('export-report-btn').disabled = false;
+    document.getElementById('export-json-btn').disabled = false;
+}
+
+function resetResults() {
+    const statusSpan = document.getElementById('analysis-status');
+    statusSpan.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800';
+    statusSpan.textContent = 'Failed';
+    
+    document.getElementById('property-results').innerHTML = `
+        <div class="flex items-center justify-center h-64 text-red-500">
+            <div class="text-center">
+                <i data-lucide="alert-circle" class="w-16 h-16 mx-auto mb-4"></i>
+                <p class="text-lg font-medium">Analysis Failed</p>
+                <p class="text-sm">Please try again with a different molecule</p>
+            </div>
+        </div>
+    `;
+}
+
+function exportReport() {
+    if (!window.lastPropertyData || !window.lastPropertyData.properties) {
+        showAlert('No property data available to export', 'warning');
+        return;
+    }
+    
+    const data = window.lastPropertyData;
+    const smiles = document.getElementById('property-input').value;
+    
+    if (!smiles) {
+        showAlert('No SMILES string available for export', 'warning');
+        return;
+    }
+    
+    // Generate comprehensive report
+    const report = generatePropertyReport(data, smiles);
+    
+    // Download as text file
+    const blob = new Blob([report], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `property_report_${smiles.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showAlert('Report exported successfully', 'success');
+}
+
+function exportJSON() {
+    if (!window.lastPropertyData || !window.lastPropertyData.properties) {
+        showAlert('No property data available to export', 'warning');
+        return;
+    }
+    
+    const data = window.lastPropertyData;
+    const smiles = document.getElementById('property-input').value;
+    
+    if (!smiles) {
+        showAlert('No SMILES string available for export', 'warning');
+        return;
+    }
+    
+    // Download as JSON
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `properties_${smiles.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showAlert('Data exported successfully', 'success');
+}
+
+function generatePropertyReport(data, smiles) {
+    const props = data.properties;
+    const timestamp = new Date().toISOString();
+    
+    return `
+MOLECULAR PROPERTY ANALYSIS REPORT
+==================================
+
+Molecule: ${data.name || (data.properties?.molecular_formula ? `Compound ${data.properties.molecular_formula}` : `Molecule (MW ${data.properties?.molecular_weight?.toFixed(1) || 'N/A'})`)}
+SMILES: ${smiles}
+Generated: ${timestamp}
+
+BASIC PROPERTIES
+----------------
+Molecular Weight: ${props.molecular_weight?.toFixed(2) || 'N/A'} Da
+Heavy Atom Count: ${props.heavy_atom_count || 'N/A'}
+Hydrogen Bond Donors: ${props.num_h_donors || 'N/A'}
+Hydrogen Bond Acceptors: ${props.num_h_acceptors || 'N/A'}
+LogP: ${props.logp?.toFixed(3) || 'N/A'}
+Topological Polar Surface Area: ${props.tpsa?.toFixed(1) || 'N/A'} Ų
+Rotatable Bonds: ${props.num_rotatable_bonds || 'N/A'}
+Total Rings: ${props.num_rings || 'N/A'}
+Aromatic Rings: ${props.num_aromatic_rings || 'N/A'}
+
+DRUG-LIKENESS ASSESSMENT
+------------------------
+Lipinski Rule of 5:
+- MW ≤ 500: ${props.molecular_weight <= 500 ? 'PASS' : 'FAIL'}
+- LogP ≤ 5: ${props.logp <= 5 ? 'PASS' : 'FAIL'}
+- HBD ≤ 5: ${props.num_h_donors <= 5 ? 'PASS' : 'FAIL'}
+- HBA ≤ 10: ${props.num_h_acceptors <= 10 ? 'PASS' : 'FAIL'}
+
+Veber Rules:
+- TPSA ≤ 140: ${props.tpsa <= 140 ? 'PASS' : 'FAIL'}
+- Rotatable Bonds ≤ 10: ${props.num_rotatable_bonds <= 10 ? 'PASS' : 'FAIL'}
+
+ADMET PREDICTIONS
+-----------------
+BBB Permeation: ${props.logp <= 3 && props.tpsa <= 90 ? 'High' : 'Low'}
+GI Absorption: ${props.tpsa <= 140 && props.molecular_weight <= 500 ? 'High' : 'Low'}
+Bioavailability: ${props.num_rotatable_bonds <= 10 && props.tpsa <= 140 ? 'Good' : 'Poor'}
+
+DISCLAIMER
+----------
+This analysis is based on computational predictions and should be validated 
+experimentally. Results are for research purposes only.
+
+Generated by NuGenRDKit - Modern Cheminformatics Web Interface
+    `.trim();
+}
+
+async function analyzeBatchProperties() {
+    const fileInput = document.getElementById('batch-properties-file');
+    const analysisType = document.getElementById('property-type').value;
+    const exportFormat = document.getElementById('properties-export-format').value;
+    const file = fileInput.files[0];
+
+    if (!file) {
+        showAlert('Please select a file', 'warning');
+        return;
+    }
+
+    try {
+        document.getElementById('property-results').innerHTML = `
+            <div class="flex flex-col items-center justify-center h-64 space-y-3">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <div class="text-center">
+                    <p class="text-gray-700 font-medium">Processing ${file.name}...</p>
+                    <p class="text-sm text-gray-500">Analyzing molecular properties</p>
+                    <p class="text-xs text-gray-400 mt-2">This may take a moment for large files</p>
+                </div>
+            </div>
+        `;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('analysis_type', analysisType);
+        formData.append('output_format', exportFormat);
+
+        const response = await fetch('/api/v1/properties/batch_file', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (exportFormat === 'csv') {
+            // CSV download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `properties_${file.name.replace(/\.[^.]+$/, '')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            document.getElementById('property-results').innerHTML = `
+                <div class="text-center py-12">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                        <i data-lucide="download" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">CSV Downloaded!</h3>
+                    <p class="text-gray-600">Check your downloads folder for the results</p>
+                    <p class="text-sm text-gray-500 mt-2">File: properties_${file.name.replace(/\.[^.]+$/, '')}.csv</p>
+                </div>
+            `;
+            lucide.createIcons();
+        } else {
+            // JSON display
+            const data = await response.json();
+
+            if (data.success) {
+                displayBatchPropertyResults(data);
+            } else {
+                showAlert(data.error || 'Batch analysis failed', 'danger');
+                document.getElementById('property-results').innerHTML = '';
+            }
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+        document.getElementById('property-results').innerHTML = '';
+    }
+}
+
+function displayBatchPropertyResults(data) {
+    const results = data.results || [];
+    const successful = data.num_successful || 0;
+    const total = data.num_molecules || 0;
+
+    let html = `
+        <div class="mb-6 bg-gradient-to-r from-pink-50 to-pink-100 p-4 rounded-lg border border-pink-200">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Batch Analysis Results</h3>
+            <div class="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                    <span class="text-gray-600">File:</span>
+                    <span class="ml-2 font-medium">${data.file_name}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Type:</span>
+                    <span class="ml-2 font-medium">${data.analysis_type}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Success:</span>
+                    <span class="ml-2 font-bold text-green-700">${successful} / ${total}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-3 max-h-96 overflow-y-auto">
+            ${results.slice(0, 20).map((result, idx) => `
+                <div class="p-4 border border-gray-200 rounded-lg hover:border-pink-300 hover:shadow-sm transition-all">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">${result.name}</h4>
+                            <code class="text-xs text-gray-600">${result.smiles}</code>
+                        </div>
+                        ${result.error ? `
+                            <span class="text-xs text-red-600">Error</span>
+                        ` : `
+                            <span class="text-xs text-green-600">✓ Success</span>
+                        `}
+                    </div>
+                    ${result.properties && !result.error ? `
+                        <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                            ${Object.entries(result.properties).slice(0, 6).map(([key, val]) => `
+                                <div>
+                                    <span class="text-gray-600">${key}:</span>
+                                    <span class="font-medium">${typeof val === 'number' ? val.toFixed(2) : val}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    ${result.error ? `
+                        <div class="text-xs text-red-600 mt-1">Error: ${result.error}</div>
+                    ` : ''}
+                </div>
+            `).join('')}
+            ${results.length > 20 ? `
+                <div class="text-center text-sm text-gray-500 py-3">
+                    Showing 20 of ${results.length} results (export as CSV for full data)
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    document.getElementById('property-results').innerHTML = html;
+    lucide.createIcons();
+}
+
+function showAlert(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 max-w-sm p-4 rounded-lg shadow-lg border ${
+        type === 'danger' ? 'bg-red-50 border-red-200 text-red-800' :
+        type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+        type === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+        'bg-blue-50 border-blue-200 text-blue-800'
+    }`;
+    toast.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i data-lucide="${
+                type === 'danger' ? 'alert-circle' : 
+                type === 'warning' ? 'alert-triangle' : 
+                type === 'success' ? 'check-circle' : 'info'
+            }" class="w-4 h-4"></i>
+            <span class="text-sm font-medium">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    lucide.createIcons();
+    
+    setTimeout(() => toast.remove(), 5000);
+}
+</script>
+{% endblock %}

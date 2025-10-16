@@ -1,0 +1,10 @@
+CCO	ethanol
+CCC	propane
+CCCC	butane
+CCCCC	pentane
+CCCCCC	hexane
+CC(C)C	isobutane
+CC(C)CC	isopentane
+c1ccccc1	benzene
+CCc1ccccc1	ethylbenzene
+CC(=O)O	acetic_acid

@@ -1,0 +1,571 @@
+{% extends "base.html" %}
+
+{% block title %}Molecular Descriptors - NuGenRDKit{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex items-center space-x-3 mb-4">
+            <div class="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg">
+                <i data-lucide="bar-chart-3" class="w-6 h-6 text-green-600"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Molecular Descriptors</h1>
+                <p class="text-gray-600">Calculate 217+ molecular descriptors and properties</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Input Section -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                    <i data-lucide="calculator" class="w-5 h-5 mr-2"></i>
+                    Calculate Descriptors
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="descriptor-input" class="block text-sm font-medium text-gray-700 mb-2">
+                            SMILES String
+                        </label>
+                        <input type="text" 
+                               id="descriptor-input" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                               placeholder="e.g., CCO" 
+                               value="CCO">
+                    </div>
+                    
+                    <div>
+                        <label for="descriptor-type" class="block text-sm font-medium text-gray-700 mb-2">
+                            Descriptor Type
+                        </label>
+                        <select id="descriptor-type"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+                            <option value="basic">Basic Properties</option>
+                            <option value="lipinski">Lipinski Rule of 5</option>
+                            <option value="logp">LogP Descriptors</option>
+                            <option value="topological">Topological</option>
+                            <option value="all">All Descriptors (217+)</option>
+                        </select>
+                    </div>
+
+                    <!-- Batch File Upload -->
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="upload" class="w-4 h-4 mr-2 text-purple-600"></i>
+                            <span class="text-sm font-medium text-purple-900">Batch: Upload molecule file</span>
+                        </div>
+                        <input type="file"
+                               id="batch-descriptors-file"
+                               accept=".smi,.smiles,.sdf,.csv,.txt"
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                        <div class="mt-2 flex items-center space-x-2">
+                            <label class="text-xs text-gray-600">Export as:</label>
+                            <select id="export-format" class="text-xs border-gray-300 rounded px-2 py-1">
+                                <option value="json">JSON</option>
+                                <option value="csv">CSV</option>
+                            </select>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-1">Calculate descriptors for 1000s of molecules (.smi, .sdf, .csv - max 50 MB)</p>
+                    </div>
+
+                    <button id="calculate-btn"
+                            class="w-full inline-flex items-center justify-center px-4 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors">
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                        Calculate
+                    </button>
+                </div>
+
+                <!-- Quick Examples -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Quick Examples</h3>
+                    <div class="space-y-2">
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" data-smiles="CC(=O)OC1=CC=CC=C1C(=O)O">
+                            Aspirin
+                        </button>
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" data-smiles="CN1C=NC2=C1C(=O)N(C(=O)N2C)C">
+                            Caffeine
+                        </button>
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" data-smiles="CC1=CC=C(C=C1)C(C)C">
+                            Ibuprofen precursor
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                        <i data-lucide="table" class="w-5 h-5 mr-2"></i>
+                        Results
+                    </h2>
+                    <button id="export-btn" 
+                            class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                            disabled>
+                        <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                        Export CSV
+                    </button>
+                </div>
+                
+                <div id="descriptor-loading" class="hidden text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Calculating descriptors...</p>
+                </div>
+                
+                <div id="descriptor-results" class="min-h-[400px]">
+                    <div class="flex items-center justify-center h-96 text-gray-500">
+                        <div class="text-center">
+                            <i data-lucide="calculator" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                            <p class="text-lg font-medium">Ready to calculate descriptors</p>
+                            <p class="text-sm">Enter a SMILES string and click Calculate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-start space-x-3">
+                    <i data-lucide="info" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                    <div>
+                        <h3 class="text-sm font-medium text-blue-800 mb-1">Descriptor Types</h3>
+                        <ul class="text-sm text-blue-700 space-y-1">
+                            <li><strong>Basic:</strong> MW, Heavy atoms, Rings, H-bonds</li>
+                            <li><strong>Lipinski:</strong> Rule of 5 properties for drug-likeness</li>
+                            <li><strong>LogP:</strong> Various lipophilicity measures</li>
+                            <li><strong>Topological:</strong> Graph-based molecular indices</li>
+                            <li><strong>All:</strong> Complete RDKit descriptor set (217+)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for SMILES parameter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const smilesParam = urlParams.get('smiles');
+    if (smilesParam) {
+        document.getElementById('descriptor-input').value = smilesParam;
+        // Auto-calculate if SMILES was provided
+        calculateDescriptors();
+        return; // Skip the normal auto-calculate at the bottom
+    }
+    
+    // Calculate button handler
+    document.getElementById('calculate-btn').addEventListener('click', function() {
+        calculateDescriptors();
+    });
+    
+    // Export button handler
+    document.getElementById('export-btn').addEventListener('click', function() {
+        exportDescriptors();
+    });
+    
+    // Example molecule handlers
+    document.querySelectorAll('.example-molecule').forEach(button => {
+        button.addEventListener('click', function() {
+            const smiles = this.getAttribute('data-smiles');
+            document.getElementById('descriptor-input').value = smiles;
+            calculateDescriptors();
+        });
+    });
+    
+    // Auto-calculate on page load
+    calculateDescriptors();
+});
+
+async function calculateDescriptors() {
+    const smiles = document.getElementById('descriptor-input').value.trim();
+    const descriptorType = document.getElementById('descriptor-type').value;
+    const fileInput = document.getElementById('batch-descriptors-file');
+
+    // Check if file upload is being used
+    if (fileInput && fileInput.files.length > 0) {
+        await calculateBatchDescriptors();
+        return;
+    }
+
+    if (!smiles) {
+        showAlert('Please enter a SMILES string', 'warning');
+        return;
+    }
+    
+    try {
+        document.getElementById('descriptor-loading').classList.remove('hidden');
+        document.getElementById('descriptor-results').innerHTML = '';
+        document.getElementById('export-btn').disabled = true;
+        
+        const endpoint = `/api/v1/descriptors/${descriptorType}`;
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ smiles })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayDescriptors(data.descriptors, smiles, descriptorType);
+            document.getElementById('export-btn').disabled = false;
+            window.lastDescriptorData = data; // Store for export
+        } else {
+            showAlert(data.error || 'Calculation failed', 'danger');
+            document.getElementById('descriptor-results').innerHTML = `
+                <div class="flex items-center justify-center h-96 text-red-500">
+                    <div class="text-center">
+                        <i data-lucide="alert-circle" class="w-16 h-16 mx-auto mb-4"></i>
+                        <p class="text-lg font-medium">Calculation Failed</p>
+                        <p class="text-sm">${data.error || 'Unknown error occurred'}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+    } finally {
+        document.getElementById('descriptor-loading').classList.add('hidden');
+        lucide.createIcons();
+    }
+}
+
+function displayDescriptors(descriptors, smiles, type) {
+    const resultsDiv = document.getElementById('descriptor-results');
+    
+    // Create molecule header
+    let html = `
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="font-medium text-gray-900">Molecule: <span class="font-mono text-primary-600">${smiles}</span></h3>
+                    <p class="text-sm text-gray-600">${getDescriptorTypeDescription(type)}</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-2xl font-bold text-primary-600">${Object.keys(descriptors).length}</div>
+                    <div class="text-xs text-gray-600">Descriptors</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Special formatting for different descriptor types
+    if (type === 'lipinski') {
+        html += formatLipinskiResults(descriptors);
+    } else if (type === 'basic') {
+        html += formatBasicResults(descriptors);
+    } else {
+        html += formatGeneralResults(descriptors);
+    }
+    
+    resultsDiv.innerHTML = html;
+}
+
+function formatLipinskiResults(descriptors) {
+    const violations = descriptors.lipinski_violations || 0;
+    const passes = descriptors.passes_lipinski || violations <= 1;
+    
+    return `
+        <div class="mb-6 p-4 rounded-lg ${passes ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}">
+            <div class="flex items-center space-x-2 mb-3">
+                <i data-lucide="${passes ? 'check-circle' : 'x-circle'}" class="w-5 h-5 ${passes ? 'text-green-600' : 'text-red-600'}"></i>
+                <h3 class="font-medium ${passes ? 'text-green-800' : 'text-red-800'}">
+                    Lipinski Rule of 5: ${passes ? 'PASSED' : 'FAILED'} (${violations} violation${violations !== 1 ? 's' : ''})
+                </h3>
+            </div>
+            <p class="text-sm ${passes ? 'text-green-700' : 'text-red-700'} mb-4">
+                ${passes ? 'This compound shows good drug-like properties.' : 'This compound may have poor oral bioavailability.'}
+            </p>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Limit</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    ${formatLipinskiRow('Molecular Weight', descriptors.molecular_weight, '≤ 500 Da', descriptors.molecular_weight <= 500)}
+                    ${formatLipinskiRow('LogP', descriptors.logp, '≤ 5', descriptors.logp <= 5)}
+                    ${formatLipinskiRow('H-bond Donors', descriptors.num_h_donors, '≤ 5', descriptors.num_h_donors <= 5)}
+                    ${formatLipinskiRow('H-bond Acceptors', descriptors.num_h_acceptors, '≤ 10', descriptors.num_h_acceptors <= 10)}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function formatLipinskiRow(property, value, limit, passes) {
+    return `
+        <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${property}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${typeof value === 'number' ? value.toFixed(2) : value}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${limit}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    passes ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }">
+                    <i data-lucide="${passes ? 'check' : 'x'}" class="w-3 h-3 mr-1"></i>
+                    ${passes ? 'Pass' : 'Fail'}
+                </span>
+            </td>
+        </tr>
+    `;
+}
+
+function formatBasicResults(descriptors) {
+    return `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            ${Object.entries(descriptors).map(([key, value]) => `
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="text-2xl font-bold text-primary-600">${typeof value === 'number' ? value.toFixed(value < 1 ? 3 : 1) : (value || 'N/A')}</div>
+                    <div class="text-sm font-medium text-gray-900">${formatDescriptorName(key)}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function formatGeneralResults(descriptors) {
+    return `
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descriptor</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    ${Object.entries(descriptors).map(([key, value], index) => `
+                        <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatDescriptorName(key)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">${
+                                typeof value === 'number' ? value.toFixed(4) : (value || 'N/A')
+                            }</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function formatDescriptorName(name) {
+    return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function getDescriptorTypeDescription(type) {
+    const descriptions = {
+        'basic': 'Essential molecular properties and counts',
+        'lipinski': 'Drug-likeness assessment using Lipinski Rule of 5',
+        'logp': 'Lipophilicity and partition coefficient descriptors',
+        'topological': 'Graph-based molecular topology indices',
+        'all': 'Complete set of available molecular descriptors'
+    };
+    return descriptions[type] || 'Molecular descriptors';
+}
+
+function exportDescriptors() {
+    if (!window.lastDescriptorData) return;
+    
+    const data = window.lastDescriptorData;
+    const descriptors = data.descriptors;
+    
+    // Create CSV content
+    let csv = 'Descriptor,Value\\n';
+    Object.entries(descriptors).forEach(([key, value]) => {
+        csv += `"${formatDescriptorName(key)}","${value}"\\n`;
+    });
+    
+    // Download CSV
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `descriptors_${data.smiles.replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+async function calculateBatchDescriptors() {
+    const fileInput = document.getElementById('batch-descriptors-file');
+    const descriptorType = document.getElementById('descriptor-type').value;
+    const exportFormat = document.getElementById('export-format').value;
+    const file = fileInput.files[0];
+
+    if (!file) {
+        showAlert('Please select a file', 'warning');
+        return;
+    }
+
+    try {
+        document.getElementById('descriptor-loading').classList.remove('hidden');
+        document.getElementById('descriptor-results').innerHTML = `
+            <div class="flex flex-col items-center justify-center h-64 space-y-3">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <div class="text-center">
+                    <p class="text-gray-700 font-medium">Processing ${file.name}...</p>
+                    <p class="text-sm text-gray-500">Calculating descriptors for molecules</p>
+                    <p class="text-xs text-gray-400 mt-2">This may take a moment for large files</p>
+                </div>
+            </div>
+        `;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('descriptor_type', descriptorType);
+        formData.append('output_format', exportFormat);
+
+        const response = await fetch('/api/v1/descriptors/batch_file', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (exportFormat === 'csv') {
+            // CSV download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `descriptors_${file.name.replace(/\\.[^.]+$/, '')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            document.getElementById('descriptor-results').innerHTML = `
+                <div class="text-center py-12">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                        <i data-lucide="download" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">CSV Downloaded!</h3>
+                    <p class="text-gray-600">Check your downloads folder for the results</p>
+                    <p class="text-sm text-gray-500 mt-2">File: descriptors_${file.name.replace(/\\.[^.]+$/, '')}.csv</p>
+                </div>
+            `;
+            lucide.createIcons();
+        } else {
+            // JSON display
+            const data = await response.json();
+
+            if (data.success) {
+                displayBatchResults(data);
+            } else {
+                showAlert(data.error || 'Batch calculation failed', 'danger');
+                document.getElementById('descriptor-results').innerHTML = '';
+            }
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+        document.getElementById('descriptor-results').innerHTML = '';
+    } finally {
+        document.getElementById('descriptor-loading').classList.add('hidden');
+    }
+}
+
+function displayBatchResults(data) {
+    const results = data.results || [];
+    const successful = data.num_successful || 0;
+    const total = data.num_molecules || 0;
+
+    let html = `
+        <div class="mb-6 bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Batch Results</h3>
+            <div class="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                    <span class="text-gray-600">File:</span>
+                    <span class="ml-2 font-medium">${data.file_name}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Type:</span>
+                    <span class="ml-2 font-medium">${data.descriptor_type}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Success:</span>
+                    <span class="ml-2 font-bold text-green-700">${successful} / ${total}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-3 max-h-96 overflow-y-auto">
+            ${results.slice(0, 20).map((result, idx) => `
+                <div class="p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:shadow-sm transition-all">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">${result.name}</h4>
+                            <code class="text-xs text-gray-600">${result.smiles}</code>
+                        </div>
+                        ${result.error ? `
+                            <span class="ml-4 text-xs text-red-600">Error: ${result.error}</span>
+                        ` : `
+                            <span class="ml-4 text-xs text-green-600">✓ Success</span>
+                        `}
+                    </div>
+                    ${result.descriptors ? `
+                        <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                            ${Object.entries(result.descriptors).slice(0, 6).map(([key, val]) => `
+                                <div>
+                                    <span class="text-gray-600">${key}:</span>
+                                    <span class="font-medium">${typeof val === 'number' ? val.toFixed(2) : val}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('')}
+            ${results.length > 20 ? `
+                <div class="text-center text-sm text-gray-500 py-3">
+                    Showing 20 of ${results.length} results (export as CSV for full data)
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    document.getElementById('descriptor-results').innerHTML = html;
+    lucide.createIcons();
+}
+
+function showAlert(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 max-w-sm p-4 rounded-lg shadow-lg border ${
+        type === 'danger' ? 'bg-red-50 border-red-200 text-red-800' :
+        type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+        'bg-blue-50 border-blue-200 text-blue-800'
+    }`;
+    toast.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i data-lucide="${type === 'danger' ? 'alert-circle' : type === 'warning' ? 'alert-triangle' : 'info'}" class="w-4 h-4"></i>
+            <span class="text-sm font-medium">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    lucide.createIcons();
+
+    setTimeout(() => toast.remove(), 5000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NuGenRDKit{% endblock %}</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons will be loaded via script tag at bottom of page -->
+    
+    <!-- Tailwind CSS -->
+    <script>
+        // Suppress Tailwind CDN production warning and WebGL framebuffer warnings
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        
+        console.warn = function(...args) {
+            if (typeof args[0] === 'string' && 
+                (args[0].includes('cdn.tailwindcss.com should not be used in production') ||
+                 args[0].includes('tailwindcss.com should not be used in production'))) {
+                return;
+            }
+            originalWarn.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            if (typeof args[0] === 'string' && 
+                (args[0].includes('GL_INVALID_FRAMEBUFFER_OPERATION') ||
+                 args[0].includes('Framebuffer is incomplete: Attachment has zero size'))) {
+                return;
+            }
+            originalError.apply(console, args);
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e'
+                        },
+                        secondary: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            900: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Logo and Mobile Menu Button Row -->
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="{{ url_for('index') }}" class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
+                            <!-- Molecule icon matching favicon -->
+                            <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Central atom -->
+                                <circle cx="16" cy="16" r="2.5" fill="white"/>
+                                <!-- Outer atoms -->
+                                <circle cx="16" cy="9" r="2" fill="white"/>
+                                <circle cx="22" cy="12.5" r="2" fill="white"/>
+                                <circle cx="22" cy="19.5" r="2" fill="white"/>
+                                <circle cx="16" cy="23" r="2" fill="white"/>
+                                <circle cx="10" cy="19.5" r="2" fill="white"/>
+                                <circle cx="10" cy="12.5" r="2" fill="white"/>
+                                <!-- Bonds -->
+                                <line x1="16" y1="16" x2="16" y2="9" stroke="white" stroke-width="1.5"/>
+                                <line x1="16" y1="16" x2="22" y2="12.5" stroke="white" stroke-width="1.5"/>
+                                <line x1="16" y1="16" x2="22" y2="19.5" stroke="white" stroke-width="1.5"/>
+                                <line x1="16" y1="16" x2="16" y2="23" stroke="white" stroke-width="1.5"/>
+                                <line x1="16" y1="16" x2="10" y2="19.5" stroke="white" stroke-width="1.5"/>
+                                <line x1="16" y1="16" x2="10" y2="12.5" stroke="white" stroke-width="1.5"/>
+                                <!-- Double bond -->
+                                <line x1="14.5" y1="15" x2="14.5" y2="10" stroke="white" stroke-width="1" opacity="0.7"/>
+                            </svg>
+                        </div>
+                        <span class="text-xl font-semibold text-gray-900">NuGenRDKit</span>
+                    </a>
+                </div>
+                
+                <!-- Desktop Status and Mobile Menu Button -->
+                <div class="flex items-center space-x-4">
+                    <!-- Status Indicator -->
+                    <div class="hidden sm:block">
+                        <span id="status-indicator" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            <div class="w-2 h-2 bg-gray-400 rounded-full mr-1.5"></div>Checking...
+                        </span>
+                    </div>
+                    
+                    <!-- Mobile menu button -->
+                    <div class="lg:hidden flex items-center">
+                        <button id="mobile-menu-button" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                            <i data-lucide="menu" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Desktop Navigation - Multiple Lines -->
+            <div class="hidden lg:block pb-3">
+                {% set nav_items = [
+                    ('index', 'Home', 'home'),
+                    ('structure', 'Structure', 'box'),
+                    ('descriptors', 'Descriptors', 'bar-chart-3'),
+                    ('fingerprints', 'Fingerprints', 'fingerprint'),
+                    ('similarity', 'Similarity', 'search'),
+                    ('coordinates', '3D Coords', 'box'),
+                    ('properties', 'Properties', 'flask-conical'),
+                    ('reactions', 'Reactions', 'zap'),
+                    ('visualization', 'Visualization', 'image')
+                ] %}
+                
+                <!-- First Row - Main Tools -->
+                <div class="flex flex-wrap items-center justify-center space-x-2 space-y-1 py-2">
+                    {% for route, name, icon in nav_items %}
+                        <a href="{{ url_for(route) }}" 
+                           class="nav-link flex items-center space-x-2 px-3 py-2 m-1 rounded-lg text-sm font-medium transition-colors hover:bg-gray-100 
+                                  {% if request.endpoint == route %}text-primary-600 bg-primary-50 shadow-sm{% else %}text-gray-600{% endif %}">
+                            <i data-lucide="{{ icon }}" class="w-4 h-4"></i>
+                            <span>{{ name }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="lg:hidden hidden border-t border-gray-200 bg-white">
+            <div class="px-2 pt-2 pb-3">
+                {% set mobile_nav_items = [
+                    ('index', 'Home', 'home'),
+                    ('structure', 'Structure', 'box'),
+                    ('descriptors', 'Descriptors', 'bar-chart-3'),
+                    ('fingerprints', 'Fingerprints', 'fingerprint'),
+                    ('similarity', 'Similarity', 'search'),
+                    ('coordinates', '3D Coords', 'box'),
+                    ('properties', 'Properties', 'flask-conical'),
+                    ('reactions', 'Reactions', 'zap'),
+                    ('visualization', 'Visualization', 'image')
+                ] %}
+                
+                <!-- Mobile navigation grid -->
+                <div class="grid grid-cols-2 gap-2">
+                    {% for route, name, icon in mobile_nav_items %}
+                        <a href="{{ url_for(route) }}" 
+                           class="mobile-nav-link flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors
+                                  {% if request.endpoint == route %}text-primary-600 bg-primary-50 border border-primary-200{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-transparent{% endif %}">
+                            <i data-lucide="{{ icon }}" class="w-4 h-4 flex-shrink-0"></i>
+                            <span class="truncate">{{ name }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
+                            <!-- Molecule icon matching favicon -->
+                            <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Central atom -->
+                                <circle cx="16" cy="16" r="2.5" fill="white"/>
+                                <!-- Outer atoms -->
+                                <circle cx="16" cy="9" r="2" fill="white"/>
+                                <circle cx="22" cy="12.5" r="2" fill="white"/>
+                                <circle cx="22" cy="19.5" r="2" fill="white"/>
+                                <circle cx="16" cy="23" r="2" fill="white"/>
+                                <circle cx="10" cy="19.5" r="2" fill="white"/>
+                                <circle cx="10" cy="12.5" r="2" fill="white"/>
+                                <!-- Bonds -->
+                                <line x1="16" y1="16" x2="16" y2="9" stroke="white" stroke-width="1.5"/>
+                                <line x1="16" y1="16" x2="22" y2="12.5" stroke="white" stroke-width="1.5"/>
+                                <line x1="16" y1="16" x2="22" y2="19.5" stroke="white" stroke-width="1.5"/>
+                                <line x1="16" y1="16" x2="16" y2="23" stroke="white" stroke-width="1.5"/>
+                                <line x1="16" y1="16" x2="10" y2="19.5" stroke="white" stroke-width="1.5"/>
+                                <line x1="16" y1="16" x2="10" y2="12.5" stroke="white" stroke-width="1.5"/>
+                                <!-- Double bond -->
+                                <line x1="14.5" y1="15" x2="14.5" y2="10" stroke="white" stroke-width="1" opacity="0.7"/>
+                            </svg>
+                        </div>
+                        <span class="text-xl font-semibold text-gray-900">NuGenRDKit</span>
+                    </div>
+                    <p class="text-gray-600">Complete RDKit web interface for modern cheminformatics analysis and molecular visualization.</p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900 tracking-wider uppercase mb-4">Features</h3>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li>217+ Molecular Descriptors</li>
+                        <li>8 Fingerprint Types</li>
+                        <li>3D Molecular Visualization</li>
+                        <li>Chemical Reaction Processing</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900 tracking-wider uppercase mb-4">Technology</h3>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li>RDKit 2025.3.5</li>
+                        <li>Flask Web Framework</li>
+                        <li>Modern Responsive Design</li>
+                        <li>REST API Backend</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center">
+                <p class="text-sm text-gray-500">
+                    Powered by <a href="https://www.rdkit.org/" class="text-primary-600 hover:text-primary-700">RDKit</a>
+                </p>
+                <div class="mt-4 sm:mt-0 flex space-x-6">
+                    <span id="status-indicator" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <div class="w-2 h-2 bg-green-400 rounded-full mr-1.5 animate-pulse"></div>
+                        Connected
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Copyright and License -->
+            <div class="border-t border-gray-200 pt-8 mt-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between text-sm text-gray-600">
+                    <div class="mb-4 md:mb-0">
+                        <p>&copy; 2025 Anthony Nystrom. All rights reserved.</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a href="https://opensource.org/licenses/MIT" 
+                           target="_blank" 
+                           class="text-primary-600 hover:text-primary-700 transition-colors flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            MIT License
+                        </a>
+                        <span class="text-gray-400">•</span>
+                        <a href="https://github.com/AnthonyNystrom/NuGenRDKit" 
+                           target="_blank" 
+                           class="text-primary-600 hover:text-primary-700 transition-colors">
+                            Open Source
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- 3Dmol.js for 3D molecular visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/3dmol@2.0.4/build/3Dmol.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+    </script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

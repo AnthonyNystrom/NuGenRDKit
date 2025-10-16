@@ -1,0 +1,638 @@
+{% extends "base.html" %}
+
+{% block title %}Molecular Fingerprints - NuGenRDKit{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex items-center space-x-3 mb-4">
+            <div class="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg">
+                <i data-lucide="fingerprint" class="w-6 h-6 text-purple-600"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Molecular Fingerprints</h1>
+                <p class="text-gray-600">Generate and compare molecular fingerprints</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Input Section -->
+        <div class="space-y-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                    <i data-lucide="settings" class="w-5 h-5 mr-2"></i>
+                    Fingerprint Generation
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="fingerprint-input" class="block text-sm font-medium text-gray-700 mb-2">
+                            SMILES String
+                        </label>
+                        <input type="text" 
+                               id="fingerprint-input" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                               placeholder="e.g., CCO" 
+                               value="CCO">
+                    </div>
+                    
+                    <div>
+                        <label for="fingerprint-type" class="block text-sm font-medium text-gray-700 mb-2">
+                            Fingerprint Type
+                        </label>
+                        <select id="fingerprint-type" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+                            <option value="morgan">Morgan (ECFP)</option>
+                            <option value="rdkit">RDKit</option>
+                            <option value="maccs">MACCS Keys</option>
+                            <option value="avalon">Avalon</option>
+                            <option value="atom_pairs">Atom Pairs</option>
+                            <option value="topological_torsions">Topological Torsions</option>
+                        </select>
+                    </div>
+                    
+                    <div id="fingerprint-params" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="fp-radius" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Radius
+                                </label>
+                                <input type="number" 
+                                       id="fp-radius" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                                       value="2" min="0" max="5">
+                            </div>
+                            <div>
+                                <label for="fp-bits" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Bits
+                                </label>
+                                <select id="fp-bits" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+                                    <option value="1024">1024</option>
+                                    <option value="2048" selected>2048</option>
+                                    <option value="4096">4096</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Batch File Upload -->
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="upload" class="w-4 h-4 mr-2 text-indigo-600"></i>
+                            <span class="text-sm font-medium text-indigo-900">Batch: Upload molecule file</span>
+                        </div>
+                        <input type="file"
+                               id="batch-fingerprints-file"
+                               accept=".smi,.smiles,.sdf,.csv,.txt"
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                        <div class="mt-2 flex items-center space-x-2">
+                            <label class="text-xs text-gray-600">Export as:</label>
+                            <select id="fp-export-format" class="text-xs border-gray-300 rounded px-2 py-1">
+                                <option value="json">JSON</option>
+                                <option value="csv">CSV</option>
+                                <option value="numpy">NumPy (.npy)</option>
+                            </select>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-1">Generate fingerprints for ML pipelines (.smi, .sdf, .csv - max 50 MB)</p>
+                    </div>
+
+                    <button id="generate-btn"
+                            class="w-full inline-flex items-center justify-center px-4 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors">
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                        Generate
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Examples -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Examples</h3>
+                <div class="space-y-2">
+                    <button class="example-molecule w-full text-left p-3 border border-gray-200 rounded-lg hover:border-primary-200 hover:bg-primary-50 transition-colors" data-smiles="CCO">
+                        <div class="font-medium text-sm">Ethanol</div>
+                        <div class="text-xs text-gray-600">CCO</div>
+                    </button>
+                    <button class="example-molecule w-full text-left p-3 border border-gray-200 rounded-lg hover:border-primary-200 hover:bg-primary-50 transition-colors" data-smiles="CC(=O)OC1=CC=CC=C1C(=O)O">
+                        <div class="font-medium text-sm">Aspirin</div>
+                        <div class="text-xs text-gray-600">CC(=O)OC1=CC=CC=C1C(=O)O</div>
+                    </button>
+                    <button class="example-molecule w-full text-left p-3 border border-gray-200 rounded-lg hover:border-primary-200 hover:bg-primary-50 transition-colors" data-smiles="CN1C=NC2=C1C(=O)N(C(=O)N2C)C">
+                        <div class="font-medium text-sm">Caffeine</div>
+                        <div class="text-xs text-gray-600">CN1C=NC2=C1C(=O)N(C(=O)N2C)C</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="space-y-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5 mr-2"></i>
+                        Fingerprint Visualization
+                    </h2>
+                    <button id="export-btn" 
+                            class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                            disabled>
+                        <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                        Export
+                    </button>
+                </div>
+                
+                <div id="fingerprint-display" class="mb-6">
+                    <div class="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
+                        <div class="text-center text-gray-500">
+                            <i data-lucide="fingerprint" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                            <p class="text-lg font-medium">Ready to generate fingerprints</p>
+                            <p class="text-sm">Enter a SMILES string and click Generate</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="fingerprint-stats" class="hidden">
+                    <!-- Stats will appear here -->
+                </div>
+            </div>
+
+            <!-- Fingerprint Comparison -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i data-lucide="git-branch" class="w-5 h-5 mr-2"></i>
+                    Compare Fingerprints
+                </h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="compare-input" class="block text-sm font-medium text-gray-700 mb-2">
+                            Second Molecule SMILES
+                        </label>
+                        <input type="text" 
+                               id="compare-input" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                               placeholder="e.g., CCC">
+                    </div>
+                    
+                    <button id="compare-btn" 
+                            class="w-full inline-flex items-center justify-center px-4 py-3 bg-secondary-600 text-white font-medium rounded-lg hover:bg-secondary-700 transition-colors">
+                        <i data-lucide="search" class="w-4 h-4 mr-2"></i>
+                        Compare Similarity
+                    </button>
+                </div>
+                
+                <div id="similarity-results" class="mt-4 hidden">
+                    <!-- Similarity results will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for SMILES parameter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const smilesParam = urlParams.get('smiles');
+    if (smilesParam) {
+        document.getElementById('fingerprint-input').value = smilesParam;
+        // Auto-generate if SMILES was provided
+        generateFingerprint();
+    }
+    
+    // Generate button handler
+    document.getElementById('generate-btn').addEventListener('click', function() {
+        generateFingerprint();
+    });
+    
+    // Compare button handler
+    document.getElementById('compare-btn').addEventListener('click', function() {
+        compareFingerprints();
+    });
+    
+    // Export button handler
+    document.getElementById('export-btn').addEventListener('click', function() {
+        exportFingerprint();
+    });
+    
+    // Example molecule handlers
+    document.querySelectorAll('.example-molecule').forEach(button => {
+        button.addEventListener('click', function() {
+            const smiles = this.getAttribute('data-smiles');
+            document.getElementById('fingerprint-input').value = smiles;
+            generateFingerprint();
+        });
+    });
+    
+    // Fingerprint type change handler
+    document.getElementById('fingerprint-type').addEventListener('change', function() {
+        updateFingerprintParams();
+    });
+    
+    updateFingerprintParams();
+    generateFingerprint(); // Auto-generate on page load
+});
+
+function updateFingerprintParams() {
+    const fpType = document.getElementById('fingerprint-type').value;
+    const paramsDiv = document.getElementById('fingerprint-params');
+    
+    // Show/hide parameters based on fingerprint type
+    if (fpType === 'maccs') {
+        paramsDiv.classList.add('hidden');
+    } else {
+        paramsDiv.classList.remove('hidden');
+        
+        if (fpType === 'avalon') {
+            document.getElementById('fp-radius').parentElement.classList.add('hidden');
+        } else {
+            document.getElementById('fp-radius').parentElement.classList.remove('hidden');
+        }
+    }
+}
+
+async function generateFingerprint() {
+    const smiles = document.getElementById('fingerprint-input').value.trim();
+    const fpType = document.getElementById('fingerprint-type').value;
+    const fileInput = document.getElementById('batch-fingerprints-file');
+
+    // Check if file upload is being used
+    if (fileInput && fileInput.files.length > 0) {
+        await calculateBatchFingerprints();
+        return;
+    }
+
+    if (!smiles) {
+        showAlert('Please enter a SMILES string', 'warning');
+        return;
+    }
+    
+    try {
+        const params = {
+            smiles: smiles
+        };
+        
+        // Add parameters based on fingerprint type
+        if (fpType !== 'maccs') {
+            if (fpType !== 'avalon') {
+                params.radius = parseInt(document.getElementById('fp-radius').value);
+            }
+            params.n_bits = parseInt(document.getElementById('fp-bits').value);
+        }
+        
+        const response = await fetch(`/api/v1/fingerprints/${fpType}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(params)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayFingerprint(data, smiles, fpType);
+            document.getElementById('export-btn').disabled = false;
+            window.lastFingerprintData = data; // Store for export and comparison
+        } else {
+            showAlert(data.error || 'Generation failed', 'danger');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+    }
+}
+
+function displayFingerprint(data, smiles, fpType) {
+    const displayDiv = document.getElementById('fingerprint-display');
+    const statsDiv = document.getElementById('fingerprint-stats');
+    
+    // Create fingerprint visualization
+    const fingerprint = data.fingerprint;
+    const onBits = data.on_bits || fingerprint.filter(bit => bit === 1).length;
+    const totalBits = fingerprint.length;
+    
+    // Create bit pattern visualization
+    const bitSize = Math.max(2, Math.floor(400 / Math.sqrt(totalBits)));
+    const bitsPerRow = Math.floor(400 / bitSize);
+    
+    let visualization = `
+        <div class="mb-4">
+            <h4 class="text-sm font-medium text-gray-900 mb-2 break-words">
+                <span class="block sm:inline">${fpType.replace('_', ' ').toUpperCase()} Fingerprint for:</span>
+                <span class="font-mono text-primary-600 break-all">${smiles}</span>
+            </h4>
+            <div class="bg-white border rounded-lg p-4 overflow-hidden">
+                <div class="grid gap-1" style="grid-template-columns: repeat(${bitsPerRow}, ${bitSize}px); justify-content: center;">
+    `;
+    
+    fingerprint.forEach((bit, index) => {
+        visualization += `<div class="w-${bitSize === 2 ? '2' : '3'} h-${bitSize === 2 ? '2' : '3'} ${bit ? 'bg-primary-600' : 'bg-gray-200'} rounded-sm" title="Bit ${index}: ${bit}"></div>`;
+    });
+    
+    visualization += `
+                </div>
+                <div class="mt-3 text-center">
+                    <span class="text-xs text-gray-600">
+                        Dark squares represent set bits (${onBits}/${totalBits} bits set, ${(onBits/totalBits*100).toFixed(1)}%)
+                    </span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    displayDiv.innerHTML = visualization;
+    
+    // Show statistics
+    const stats = `
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold text-primary-600">${totalBits}</div>
+                <div class="text-xs text-gray-600">Total Bits</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold text-green-600">${onBits}</div>
+                <div class="text-xs text-gray-600">Set Bits</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold text-blue-600">${(onBits/totalBits*100).toFixed(1)}%</div>
+                <div class="text-xs text-gray-600">Density</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-sm font-bold text-purple-600 break-words leading-tight">${fpType.replace('_', ' ').toUpperCase()}</div>
+                <div class="text-xs text-gray-600 mt-1">Type</div>
+            </div>
+        </div>
+    `;
+    
+    statsDiv.innerHTML = stats;
+    statsDiv.classList.remove('hidden');
+}
+
+async function compareFingerprints() {
+    const smiles1 = document.getElementById('fingerprint-input').value.trim();
+    const smiles2 = document.getElementById('compare-input').value.trim();
+    const fpType = document.getElementById('fingerprint-type').value;
+    
+    if (!smiles1 || !smiles2) {
+        showAlert('Please enter both SMILES strings', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/v1/similarity/tanimoto', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                smiles1: smiles1,
+                smiles2: smiles2,
+                fingerprint_type: fpType
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displaySimilarityResults(data, smiles1, smiles2);
+        } else {
+            showAlert(data.error || 'Comparison failed', 'danger');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+    }
+}
+
+function displaySimilarityResults(data, smiles1, smiles2) {
+    const resultsDiv = document.getElementById('similarity-results');
+    const similarity = data.tanimoto_similarity;
+    
+    const getSimularityColor = (sim) => {
+        if (sim >= 0.8) return 'text-green-600 bg-green-50';
+        if (sim >= 0.6) return 'text-yellow-600 bg-yellow-50';
+        if (sim >= 0.4) return 'text-orange-600 bg-orange-50';
+        return 'text-red-600 bg-red-50';
+    };
+    
+    const getSimilarityDescription = (sim) => {
+        if (sim >= 0.8) return 'Very Similar';
+        if (sim >= 0.6) return 'Similar';
+        if (sim >= 0.4) return 'Somewhat Similar';
+        return 'Different';
+    };
+    
+    resultsDiv.innerHTML = `
+        <div class="border border-gray-200 rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 mb-3">Tanimoto Similarity</h4>
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex-1">
+                    <div class="text-xs text-gray-600 mb-1">Molecule 1</div>
+                    <div class="font-mono text-sm truncate">${smiles1}</div>
+                </div>
+                <div class="px-4 py-2 mx-4 rounded-lg ${getSimularityColor(similarity)}">
+                    <div class="text-2xl font-bold">${(similarity * 100).toFixed(1)}%</div>
+                </div>
+                <div class="flex-1 text-right">
+                    <div class="text-xs text-gray-600 mb-1">Molecule 2</div>
+                    <div class="font-mono text-sm truncate">${smiles2}</div>
+                </div>
+            </div>
+            <div class="text-center">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getSimularityColor(similarity)}">
+                    ${getSimilarityDescription(similarity)}
+                </span>
+            </div>
+        </div>
+    `;
+    
+    resultsDiv.classList.remove('hidden');
+}
+
+function exportFingerprint() {
+    if (!window.lastFingerprintData) return;
+    
+    const data = window.lastFingerprintData;
+    
+    // Create text content with fingerprint data
+    let content = `Molecule: ${data.smiles}\\n`;
+    content += `Fingerprint Type: ${document.getElementById('fingerprint-type').value}\\n`;
+    content += `Total Bits: ${data.fingerprint.length}\\n`;
+    content += `Set Bits: ${data.on_bits || data.fingerprint.filter(bit => bit === 1).length}\\n`;
+    content += `Fingerprint Vector:\\n`;
+    content += data.fingerprint.join(',');
+    
+    // Download file
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fingerprint_${data.smiles.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+async function calculateBatchFingerprints() {
+    const fileInput = document.getElementById('batch-fingerprints-file');
+    const fpType = document.getElementById('fingerprint-type').value;
+    const radius = document.getElementById('fp-radius').value;
+    const nBits = document.getElementById('fp-bits').value;
+    const exportFormat = document.getElementById('fp-export-format').value;
+    const file = fileInput.files[0];
+
+    if (!file) {
+        showAlert('Please select a file', 'warning');
+        return;
+    }
+
+    try {
+        const resultsDiv = document.getElementById('fingerprint-results');
+        resultsDiv.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-64 space-y-3">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <div class="text-center">
+                    <p class="text-gray-700 font-medium">Processing ${file.name}...</p>
+                    <p class="text-sm text-gray-500">Generating fingerprints</p>
+                    <p class="text-xs text-gray-400 mt-2">This may take a moment for large files</p>
+                </div>
+            </div>
+        `;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('fp_type', fpType);
+        formData.append('radius', radius);
+        formData.append('n_bits', nBits);
+        formData.append('output_format', exportFormat);
+
+        const response = await fetch('/api/v1/fingerprints/batch_file', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (exportFormat === 'csv' || exportFormat === 'numpy') {
+            // Download file
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const ext = exportFormat === 'numpy' ? 'npy' : 'csv';
+            a.download = `fingerprints_${file.name.replace(/\\.[^.]+$/, '')}.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            resultsDiv.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                        <i data-lucide="download" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">${exportFormat.toUpperCase()} Downloaded!</h3>
+                    <p class="text-gray-600">Check your downloads folder for the results</p>
+                    <p class="text-sm text-gray-500 mt-2">File: fingerprints_${file.name.replace(/\\.[^.]+$/, '')}.${ext}</p>
+                </div>
+            `;
+            lucide.createIcons();
+        } else {
+            // JSON display
+            const data = await response.json();
+            if (data.success) {
+                displayBatchFingerprintResults(data);
+            } else {
+                showAlert(data.error || 'Batch generation failed', 'danger');
+                resultsDiv.innerHTML = '';
+            }
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+    }
+}
+
+function displayBatchFingerprintResults(data) {
+    const results = data.results || [];
+    const successful = data.num_successful || 0;
+    const total = data.num_molecules || 0;
+
+    let html = `
+        <div class="mb-6 bg-gradient-to-r from-indigo-50 to-indigo-100 p-4 rounded-lg border border-indigo-200">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Batch Results</h3>
+            <div class="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                    <span class="text-gray-600">File:</span>
+                    <span class="ml-2 font-medium">${data.file_name}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Type:</span>
+                    <span class="ml-2 font-medium">${data.fingerprint_type}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Success:</span>
+                    <span class="ml-2 font-bold text-green-700">${successful} / ${total}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-3 max-h-96 overflow-y-auto">
+            ${results.slice(0, 20).map(result => `
+                <div class="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:shadow-sm transition-all">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">${result.name}</h4>
+                            <code class="text-xs text-gray-600">${result.smiles}</code>
+                        </div>
+                        <div class="ml-4">
+                            ${result.error ? `
+                                <span class="text-xs text-red-600">Error</span>
+                            ` : `
+                                <span class="text-xs text-green-600">${result.on_bits} bits set</span>
+                            `}
+                        </div>
+                    </div>
+                    ${result.error ? `
+                        <div class="text-xs text-red-600 mt-1">Error: ${result.error}</div>
+                    ` : ''}
+                </div>
+            `).join('')}
+            ${results.length > 20 ? `
+                <div class="text-center text-sm text-gray-500 py-3">
+                    Showing 20 of ${results.length} results (export as CSV/NumPy for full data)
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    document.getElementById('fingerprint-results').innerHTML = html;
+    lucide.createIcons();
+}
+
+function showAlert(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 max-w-sm p-4 rounded-lg shadow-lg border ${
+        type === 'danger' ? 'bg-red-50 border-red-200 text-red-800' :
+        type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+        'bg-blue-50 border-blue-200 text-blue-800'
+    }`;
+    toast.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i data-lucide="${type === 'danger' ? 'alert-circle' : type === 'warning' ? 'alert-triangle' : 'info'}" class="w-4 h-4"></i>
+            <span class="text-sm font-medium">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    lucide.createIcons();
+
+    setTimeout(() => toast.remove(), 5000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,1271 @@
+{% extends "base.html" %}
+
+{% block title %}Chemical Reactions - NuGenRDKit{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex items-center space-x-3 mb-4">
+            <div class="flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-lg">
+                <i data-lucide="zap" class="w-6 h-6 text-yellow-600"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Chemical Reactions</h1>
+                <p class="text-gray-600">Process chemical reactions and enumerate product libraries</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Input Section -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                    <i data-lucide="flask-conical" class="w-5 h-5 mr-2"></i>
+                    Reaction Processing
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="reaction-type" class="block text-sm font-medium text-gray-700 mb-2">
+                            Reaction Type
+                        </label>
+                        <select id="reaction-type"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+                            <optgroup label="Basic Reactions">
+                                <option value="smarts">SMARTS Pattern</option>
+                                <option value="template">Reaction Template</option>
+                                <option value="enumeration">Product Enumeration</option>
+                            </optgroup>
+                            <optgroup label="Advanced Features">
+                                <option value="fingerprint">Reaction Fingerprint</option>
+                                <option value="brics">BRICS Fragmentation</option>
+                                <option value="recap">RECAP Decomposition</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div id="smarts-input" class="space-y-4">
+                        <div>
+                            <label for="reaction-smarts" class="block text-sm font-medium text-gray-700 mb-2">
+                                Reaction SMARTS
+                            </label>
+                            <input type="text" 
+                                   id="reaction-smarts" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                                   placeholder="e.g., [C:1](=[O:2])[OH:3]>>[C:1](=[O:2])[Cl:3]" 
+                                   value="[C:1](=[O:2])[OH:3]>>[C:1](=[O:2])[Cl:3]">
+                        </div>
+                        
+                        <div>
+                            <label for="reactant-smiles" class="block text-sm font-medium text-gray-700 mb-2">
+                                Reactants (one per line)
+                            </label>
+                            <textarea id="reactant-smiles" 
+                                      rows="4"
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                                      placeholder="CC(=O)O&#10;CCO&#10;c1ccccc1C(=O)O">CC(=O)O
+c1ccccc1C(=O)O
+CCC(=O)O</textarea>
+                            <div class="mt-2 text-xs text-gray-500">
+                                For multi-reactant reactions, the system will try all valid combinations.
+                                <br>Tip: For 2-component reactions like amide formation, list acids first, then amines.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="enumeration-input" class="space-y-4 hidden">
+                        <div>
+                            <label for="building-blocks" class="block text-sm font-medium text-gray-700 mb-2">
+                                Building Blocks
+                            </label>
+                            <textarea id="building-blocks" 
+                                      rows="3"
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                                      placeholder="CCO&#10;CCC&#10;CCCC">CCO
+CCC
+CCCC</textarea>
+                        </div>
+                        
+                        <div>
+                            <label for="core-structure" class="block text-sm font-medium text-gray-700 mb-2">
+                                Core Structure
+                            </label>
+                            <input type="text" 
+                                   id="core-structure" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                                   placeholder="e.g., c1ccc([*:1])cc1"
+                                   value="c1ccc([*:1])cc1">
+                        </div>
+                    </div>
+
+                    <!-- Reaction Fingerprint Input -->
+                    <div id="fingerprint-input" class="space-y-4 hidden">
+                        <div>
+                            <label for="fingerprint-reaction-smarts" class="block text-sm font-medium text-gray-700 mb-2">
+                                Reaction SMARTS
+                            </label>
+                            <input type="text"
+                                   id="fingerprint-reaction-smarts"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   placeholder="e.g., [C:1](=[O:2])[OH:3]>>[C:1](=[O:2])[Cl:3]"
+                                   value="[C:1](=[O:2])[OH:3]>>[C:1](=[O:2])[Cl:3]">
+                        </div>
+
+                        <div>
+                            <label for="fingerprint-type" class="block text-sm font-medium text-gray-700 mb-2">
+                                Fingerprint Type
+                            </label>
+                            <select id="fingerprint-type"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+                                <option value="structural">Structural Fingerprint</option>
+                                <option value="difference">Difference Fingerprint</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="fingerprint-fp-size" class="block text-sm font-medium text-gray-700 mb-2">
+                                Fingerprint Size
+                            </label>
+                            <input type="number"
+                                   id="fingerprint-fp-size"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   value="2048" min="512" max="16384" step="512">
+                        </div>
+                    </div>
+
+                    <!-- BRICS Fragmentation Input -->
+                    <div id="brics-input" class="space-y-4 hidden">
+                        <div>
+                            <label for="brics-molecules" class="block text-sm font-medium text-gray-700 mb-2">
+                                Molecules (SMILES, one per line)
+                            </label>
+                            <textarea id="brics-molecules"
+                                      rows="4"
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                      placeholder="CC(=O)OC1=CC=CC=C1C(=O)O&#10;CC(C)Cc1ccc(cc1)C(C)C(=O)O">CC(=O)OC1=CC=CC=C1C(=O)O
+CC(C)Cc1ccc(cc1)C(C)C(=O)O</textarea>
+                        </div>
+
+                        <div>
+                            <label for="brics-min-fragment-size" class="block text-sm font-medium text-gray-700 mb-2">
+                                Min Fragment Size
+                            </label>
+                            <input type="number"
+                                   id="brics-min-fragment-size"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   value="3" min="1" max="10">
+                        </div>
+
+                        <div>
+                            <label for="brics-max-products" class="block text-sm font-medium text-gray-700 mb-2">
+                                Max Products to Generate
+                            </label>
+                            <input type="number"
+                                   id="brics-max-products"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   value="100" min="1" max="1000">
+                        </div>
+                    </div>
+
+                    <!-- RECAP Decomposition Input -->
+                    <div id="recap-input" class="space-y-4 hidden">
+                        <div>
+                            <label for="recap-smiles" class="block text-sm font-medium text-gray-700 mb-2">
+                                Molecule SMILES
+                            </label>
+                            <input type="text"
+                                   id="recap-smiles"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   placeholder="e.g., CC(=O)OC1=CC=CC=C1C(=O)O"
+                                   value="CC(=O)OC1=CC=CC=C1C(=O)O">
+                        </div>
+
+                        <div>
+                            <label for="recap-min-fragment-size" class="block text-sm font-medium text-gray-700 mb-2">
+                                Min Fragment Size
+                            </label>
+                            <input type="number"
+                                   id="recap-min-fragment-size"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   value="3" min="1" max="10">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="max-products" class="block text-sm font-medium text-gray-700 mb-1">
+                                Max Products
+                            </label>
+                            <input type="number"
+                                   id="max-products"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   value="50" min="1" max="1000">
+                        </div>
+
+                        <div>
+                            <label for="reaction-mode" class="block text-sm font-medium text-gray-700 mb-1">
+                                Mode
+                            </label>
+                            <select id="reaction-mode"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+                                <option value="all">All Products</option>
+                                <option value="unique">Unique Only</option>
+                                <option value="filtered">Filtered</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Batch File Upload -->
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="upload" class="w-4 h-4 mr-2 text-orange-600"></i>
+                            <span class="text-sm font-medium text-orange-900">Batch: Upload reactants file</span>
+                        </div>
+                        <input type="file"
+                               id="batch-reactions-file"
+                               accept=".smi,.smiles,.sdf,.csv,.txt,.rxn"
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+                        <p class="text-xs text-gray-600 mt-1">Upload reactants or RXN file (.smi, .sdf, .csv, .rxn - max 50 MB)</p>
+                    </div>
+
+                    <button id="process-reaction-btn"
+                            class="w-full inline-flex items-center justify-center px-4 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors">
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                        Process Reaction
+                    </button>
+                </div>
+
+                <!-- Reaction Templates -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Common Reactions</h3>
+                    <div class="space-y-2">
+                        <button class="reaction-template w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smarts="[C:1](=[O:2])[OH:3]>>[C:1](=[O:2])[Cl:3]"
+                                data-reactants="CC(=O)O&#10;c1ccccc1C(=O)O&#10;CCC(=O)O"
+                                data-name="Acid Chloride Formation">
+                            Acid → Acid Chloride
+                        </button>
+                        <button class="reaction-template w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smarts="[C:1](=[O:2])O.[N:4]>>[C:1](=[O:2])[N:4]"
+                                data-reactants="CC(=O)O&#10;c1ccccc1C(=O)O&#10;CCN&#10;c1ccccc1N"
+                                data-name="Amide Formation">
+                            Acid + Amine → Amide
+                        </button>
+                        <button class="reaction-template w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smarts="[C:1][OH:2].[C:3](=[O:4])[OH:5]>>[C:1][O:2][C:3](=[O:4])"
+                                data-reactants="CCO&#10;CC(C)O&#10;CC(=O)O&#10;c1ccccc1C(=O)O"
+                                data-name="Esterification">
+                            Alcohol + Acid → Ester
+                        </button>
+                        <button class="reaction-template w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smarts="[c:1][N+:2](=[O:3])[O-:4]>>[c:1][N:2]"
+                                data-reactants="c1ccc([N+](=O)[O-])cc1&#10;c1ccc(c(c1)[N+](=O)[O-])C&#10;c1cc([N+](=O)[O-])ccc1O"
+                                data-name="Nitro Reduction">
+                            Nitro → Amine
+                        </button>
+                        <button class="reaction-template w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smarts="[C:1]=[C:2]>>[C:1][C:2]"
+                                data-reactants="C=C&#10;C=CCC&#10;c1ccc(C=C)cc1&#10;CC=CC"
+                                data-name="Alkene Reduction">
+                            Alkene → Alkane
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Export Options -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Export Options</h3>
+                    <div class="space-y-2">
+                        <button id="export-products-btn" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                                disabled>
+                            <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                            Export Products
+                        </button>
+                        <button id="export-reaction-btn" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                                disabled>
+                            <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                            Export Reaction
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="lg:col-span-2">
+            <div class="space-y-6">
+                <!-- Reaction Overview -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                            <i data-lucide="activity" class="w-5 h-5 mr-2"></i>
+                            Reaction Overview
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <span id="reaction-status" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                Ready
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div id="reaction-overview" class="min-h-[200px]">
+                        <div class="flex items-center justify-center h-48 text-gray-500">
+                            <div class="text-center">
+                                <i data-lucide="zap" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                                <p class="text-lg font-medium">Ready to process reactions</p>
+                                <p class="text-sm">Select reaction type and enter reactants</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Library -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <i data-lucide="layers" class="w-5 h-5 mr-2"></i>
+                            Product Library
+                        </h3>
+                        <div id="product-count" class="text-sm text-gray-600">
+                            0 products
+                        </div>
+                    </div>
+                    
+                    <div id="product-library" class="min-h-[300px]">
+                        <div class="flex items-center justify-center h-64 text-gray-500">
+                            <div class="text-center">
+                                <i data-lucide="layers" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                                <p class="text-sm">Products will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reaction Statistics -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5 mr-2"></i>
+                        Reaction Statistics
+                    </h3>
+                    
+                    <div id="reaction-stats" class="min-h-[150px]">
+                        <div class="flex items-center justify-center h-32 text-gray-500">
+                            <div class="text-center">
+                                <i data-lucide="bar-chart-2" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                                <p class="text-sm">Statistics will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Process reaction button handler
+    document.getElementById('process-reaction-btn').addEventListener('click', function() {
+        processReaction();
+    });
+    
+    // Export button handlers
+    document.getElementById('export-products-btn').addEventListener('click', function() {
+        exportProducts();
+    });
+    document.getElementById('export-reaction-btn').addEventListener('click', function() {
+        exportReactionData();
+    });
+    
+    // Reaction type change handler
+    document.getElementById('reaction-type').addEventListener('change', function() {
+        updateReactionInputs();
+    });
+    
+    // Reaction template handlers
+    document.querySelectorAll('.reaction-template').forEach(button => {
+        button.addEventListener('click', function() {
+            const smarts = this.getAttribute('data-smarts');
+            const reactants = this.getAttribute('data-reactants');
+            const name = this.getAttribute('data-name');
+            
+            document.getElementById('reaction-smarts').value = smarts;
+            if (reactants) {
+                document.getElementById('reactant-smiles').value = reactants.replace(/&#10;/g, '\n');
+            }
+            processReaction();
+        });
+    });
+    
+    updateReactionInputs();
+    // Auto-process on page load with default reaction
+    processReaction();
+});
+
+function updateReactionInputs() {
+    const reactionType = document.getElementById('reaction-type').value;
+    const smartsInput = document.getElementById('smarts-input');
+    const enumerationInput = document.getElementById('enumeration-input');
+    const fingerprintInput = document.getElementById('fingerprint-input');
+    const bricsInput = document.getElementById('brics-input');
+    const recapInput = document.getElementById('recap-input');
+
+    // Hide all input sections first
+    smartsInput.classList.add('hidden');
+    enumerationInput.classList.add('hidden');
+    fingerprintInput.classList.add('hidden');
+    bricsInput.classList.add('hidden');
+    recapInput.classList.add('hidden');
+
+    // Show the appropriate input section
+    if (reactionType === 'enumeration') {
+        enumerationInput.classList.remove('hidden');
+    } else if (reactionType === 'fingerprint') {
+        fingerprintInput.classList.remove('hidden');
+    } else if (reactionType === 'brics') {
+        bricsInput.classList.remove('hidden');
+    } else if (reactionType === 'recap') {
+        recapInput.classList.remove('hidden');
+    } else {
+        smartsInput.classList.remove('hidden');
+    }
+}
+
+async function processReaction() {
+    const reactionType = document.getElementById('reaction-type').value;
+    const maxProducts = parseInt(document.getElementById('max-products').value);
+    const reactionMode = document.getElementById('reaction-mode').value;
+    const fileInput = document.getElementById('batch-reactions-file');
+
+    // Check if file upload is being used
+    if (fileInput && fileInput.files.length > 0) {
+        await processBatchReaction();
+        return;
+    }
+
+    let requestData = {};
+    let apiEndpoint = '/api/v1/reactions/process';
+
+    if (reactionType === 'fingerprint') {
+        const reactionSmarts = document.getElementById('fingerprint-reaction-smarts').value.trim();
+
+        if (!reactionSmarts) {
+            showAlert('Please enter reaction SMARTS', 'warning');
+            return;
+        }
+
+        requestData.reaction_smarts = reactionSmarts;
+        requestData.fp_type = document.getElementById('fingerprint-type').value;
+        requestData.fp_size = parseInt(document.getElementById('fingerprint-fp-size').value);
+        apiEndpoint = '/api/v1/reactions/reaction_fingerprint';
+
+    } else if (reactionType === 'brics') {
+        const molecules = document.getElementById('brics-molecules').value.trim();
+
+        if (!molecules) {
+            showAlert('Please enter molecules', 'warning');
+            return;
+        }
+
+        requestData.molecules = molecules.split('\n').map(s => s.trim()).filter(s => s);
+        requestData.min_fragment_size = parseInt(document.getElementById('brics-min-fragment-size').value);
+        requestData.max_products = parseInt(document.getElementById('brics-max-products').value);
+        apiEndpoint = '/api/v1/reactions/brics_react';
+
+    } else if (reactionType === 'recap') {
+        const smiles = document.getElementById('recap-smiles').value.trim();
+
+        if (!smiles) {
+            showAlert('Please enter molecule SMILES', 'warning');
+            return;
+        }
+
+        requestData.smiles = smiles;
+        requestData.min_fragment_size = parseInt(document.getElementById('recap-min-fragment-size').value);
+        apiEndpoint = '/api/v1/reactions/recap_react';
+
+    } else if (reactionType === 'enumeration') {
+        const buildingBlocks = document.getElementById('building-blocks').value.trim();
+        const coreStructure = document.getElementById('core-structure').value.trim();
+
+        if (!buildingBlocks || !coreStructure) {
+            showAlert('Please enter building blocks and core structure', 'warning');
+            return;
+        }
+
+        requestData.reaction_type = reactionType;
+        requestData.max_products = maxProducts;
+        requestData.mode = reactionMode;
+        requestData.building_blocks = buildingBlocks.split('\n').map(s => s.trim()).filter(s => s);
+        requestData.core_structure = coreStructure;
+
+    } else {
+        const reactionSmarts = document.getElementById('reaction-smarts').value.trim();
+        const reactantSmiles = document.getElementById('reactant-smiles').value.trim();
+
+        if (!reactionSmarts || !reactantSmiles) {
+            showAlert('Please enter reaction SMARTS and reactants', 'warning');
+            return;
+        }
+
+        requestData.reaction_type = reactionType;
+        requestData.max_products = maxProducts;
+        requestData.mode = reactionMode;
+        requestData.reaction_smarts = reactionSmarts;
+        requestData.reactants = reactantSmiles.split('\n').map(s => s.trim()).filter(s => s);
+    }
+    
+    try {
+        // Update status
+        const statusSpan = document.getElementById('reaction-status');
+        statusSpan.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800';
+        statusSpan.textContent = 'Processing...';
+        
+        // Show loading state
+        document.getElementById('reaction-overview').innerHTML = `
+            <div class="flex items-center justify-center h-48">
+                <div class="text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Processing reaction...</p>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('product-library').innerHTML = `
+            <div class="flex items-center justify-center h-32">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                <span class="ml-3 text-gray-600">Generating products...</span>
+            </div>
+        `;
+        
+        // Make API request
+        const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            if (reactionType === 'fingerprint' || reactionType === 'brics' || reactionType === 'recap') {
+                displayNewReactionResults(data, reactionType, requestData);
+            } else {
+                displayReactionResults(data, requestData);
+            }
+            enableExportButtons();
+            
+            statusSpan.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
+            statusSpan.textContent = 'Complete';
+            
+            window.lastReactionData = data; // Store for export
+        } else {
+            showAlert(data.error || 'Reaction processing failed', 'danger');
+            resetResults();
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+        resetResults();
+    }
+}
+
+function displayNewReactionResults(data, reactionType, request) {
+    const overviewDiv = document.getElementById('reaction-overview');
+    const libraryDiv = document.getElementById('product-library');
+    const countDiv = document.getElementById('product-count');
+
+    if (reactionType === 'fingerprint') {
+        // Display reaction fingerprint results
+        const fpData = data.fingerprint || {};
+        const numBits = fpData.num_bits || data.fp_size || 0;
+        const numOnBits = fpData.num_on_bits || data.num_on_bits || 0;
+        const onBits = data.on_bits || [];
+        const fpType = data.fp_type || 'structural';
+        const density = numBits > 0 ? ((numOnBits / numBits) * 100).toFixed(2) : 0;
+
+        countDiv.textContent = `Fingerprint generated: ${numBits} bits (${numOnBits} active)`;
+
+        overviewDiv.innerHTML = `
+            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-purple-900 mb-4">Reaction Fingerprint</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-lg p-3 text-center shadow-sm">
+                        <div class="text-2xl font-bold text-purple-900">${numBits}</div>
+                        <div class="text-xs text-purple-700">Total Bits</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 text-center shadow-sm">
+                        <div class="text-2xl font-bold text-indigo-900">${numOnBits}</div>
+                        <div class="text-xs text-indigo-700">Active Bits</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 text-center shadow-sm">
+                        <div class="text-2xl font-bold text-purple-900">${density}%</div>
+                        <div class="text-xs text-purple-700">Density</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 text-center shadow-sm">
+                        <div class="text-sm font-bold text-purple-900">${fpType === 'difference' ? 'Difference' : 'Structural'}</div>
+                        <div class="text-xs text-purple-700">FP Type</div>
+                    </div>
+                </div>
+                <div class="mt-4 bg-white rounded-lg p-3">
+                    <h4 class="text-sm font-medium text-gray-900 mb-2">Reaction SMARTS</h4>
+                    <code class="text-xs text-purple-800 break-all">${request.reaction_smarts}</code>
+                </div>
+            </div>
+        `;
+
+        libraryDiv.innerHTML = `
+            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6">
+                <div class="text-center mb-6">
+                    <i data-lucide="fingerprint" class="w-16 h-16 mx-auto mb-3 text-purple-500"></i>
+                    <h3 class="text-lg font-semibold text-purple-900 mb-2">Fingerprint Data</h3>
+                    <p class="text-sm text-purple-700">Use for reaction similarity searches</p>
+                </div>
+
+                ${onBits.length > 0 ? `
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-2">Active Bit Positions (first 100)</h4>
+                        <div class="text-xs text-gray-600 font-mono max-h-40 overflow-y-auto p-2 bg-gray-50 rounded">
+                            ${onBits.join(', ')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div class="mt-4 p-3 bg-purple-100 rounded-lg">
+                    <p class="text-xs text-purple-800">
+                        <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+                        This fingerprint can be used for reaction similarity searches and database screening
+                    </p>
+                </div>
+            </div>
+        `;
+
+    } else if (reactionType === 'brics') {
+        // Display BRICS results
+        const fragments = data.fragments || [];
+        const products = data.products || [];
+        const numProducts = data.num_products || products.length;
+
+        countDiv.textContent = `${numProducts} products generated from ${fragments.length} fragments`;
+
+        overviewDiv.innerHTML = `
+            <div class="bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-green-900 mb-4">BRICS Fragmentation & Recombination</h3>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-white rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-green-900">${fragments.length}</div>
+                        <div class="text-xs text-green-700">Fragments</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-green-900">${numProducts}</div>
+                        <div class="text-xs text-green-700">Products</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-green-900">${request.min_fragment_size || 3}</div>
+                        <div class="text-xs text-green-700">Min Frag Size</div>
+                    </div>
+                </div>
+                <div class="mt-4 bg-white rounded-lg p-3 max-h-32 overflow-y-auto">
+                    <h4 class="text-sm font-medium text-gray-900 mb-2">Fragments (${fragments.length})</h4>
+                    <div class="space-y-1">
+                        ${fragments.slice(0, 10).map((frag, idx) => `
+                            <code class="block text-xs text-green-800">${idx + 1}. ${frag}</code>
+                        `).join('')}
+                        ${fragments.length > 10 ? `<p class="text-xs text-gray-500 mt-2">... and ${fragments.length - 10} more</p>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (products.length > 0) {
+            libraryDiv.innerHTML = `
+                <div class="space-y-3">
+                    ${products.slice(0, 20).map((prod, idx) => `
+                        <div class="bg-white border border-green-200 rounded-lg p-3 hover:border-green-400 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <span class="text-xs font-medium text-green-900">Product ${idx + 1}</span>
+                                    <code class="block text-xs text-gray-700 mt-1">${prod.smiles || prod}</code>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                    ${products.length > 20 ? `
+                        <div class="text-center text-sm text-gray-500 py-3">
+                            Showing 20 of ${products.length} products
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        } else {
+            // Show message when no products were generated
+            const buildError = data.build_error;
+            libraryDiv.innerHTML = `
+                <div class="text-center py-8">
+                    <i data-lucide="info" class="w-12 h-12 mx-auto mb-3 text-yellow-400"></i>
+                    <p class="text-gray-700 font-medium">Fragments generated but product recombination not available</p>
+                    <p class="text-sm text-gray-600 mt-2">BRICS fragmentation completed successfully.</p>
+                    <p class="text-xs text-gray-500 mt-2">The ${fragments.length} fragments are shown above and can be used for analysis.</p>
+                    ${buildError ? `<p class="text-xs text-red-600 mt-2">Build error: ${buildError}</p>` : ''}
+                </div>
+            `;
+        }
+
+    } else if (reactionType === 'recap') {
+        // Display RECAP results
+        const fragments = data.fragments || [];
+        const numFragments = data.num_fragments || fragments.length;
+
+        countDiv.textContent = `${numFragments} fragments generated`;
+
+        overviewDiv.innerHTML = `
+            <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-blue-900 mb-4">RECAP Decomposition</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-blue-900">${numFragments}</div>
+                        <div class="text-xs text-blue-700">Fragments</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 text-center">
+                        <div class="text-2xl font-bold text-blue-900">${request.min_fragment_size || 3}</div>
+                        <div class="text-xs text-blue-700">Min Fragment Size</div>
+                    </div>
+                </div>
+                <div class="mt-4 bg-white rounded-lg p-3">
+                    <h4 class="text-sm font-medium text-gray-900 mb-2">Original Molecule</h4>
+                    <code class="text-xs text-blue-800 break-all">${request.smiles}</code>
+                </div>
+            </div>
+        `;
+
+        libraryDiv.innerHTML = `
+            <div class="space-y-2">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">Retrosynthetic Fragments</h4>
+                ${fragments.map((frag, idx) => `
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 hover:bg-blue-100 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-medium text-blue-900">Fragment ${idx + 1}</span>
+                            <code class="text-xs text-blue-800 font-mono">${frag}</code>
+                        </div>
+                    </div>
+                `).join('')}
+                ${fragments.length === 0 ? `
+                    <div class="text-center py-8 text-gray-500">
+                        <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                        <p class="text-sm">No fragments generated</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    // Re-initialize icons
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
+function displayReactionResults(data, request) {
+    const overviewDiv = document.getElementById('reaction-overview');
+    const libraryDiv = document.getElementById('product-library');
+    const statsDiv = document.getElementById('reaction-stats');
+    const countDiv = document.getElementById('product-count');
+    
+    const products = data.products || [];
+    
+    // Update product count
+    countDiv.textContent = `${products.length} products generated`;
+    
+    // Display reaction overview
+    overviewDiv.innerHTML = `
+        <div class="space-y-4">
+            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-yellow-900">
+                            ${data.reaction_name || 'Custom Reaction'}
+                        </h3>
+                        <p class="text-sm text-yellow-700">
+                            ${request.reaction_type === 'enumeration' ? 'Product Enumeration' : 'SMARTS Transformation'}
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-yellow-900">${products.length}</div>
+                        <div class="text-sm text-yellow-700">Products</div>
+                    </div>
+                </div>
+            </div>
+            
+            ${request.reaction_type !== 'enumeration' ? `
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Reaction SMARTS</h4>
+                    <code class="text-sm bg-white px-2 py-1 rounded border break-all">${request.reaction_smarts}</code>
+                </div>
+            ` : `
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Core Structure</h4>
+                    <code class="text-sm bg-white px-2 py-1 rounded border break-all">${request.core_structure}</code>
+                </div>
+            `}
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                    <div class="text-lg font-semibold text-gray-900">${request.reaction_type !== 'enumeration' ? request.reactants.length : request.building_blocks.length}</div>
+                    <div class="text-xs text-gray-600">${request.reaction_type !== 'enumeration' ? 'Reactants' : 'Building Blocks'}</div>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                    <div class="text-lg font-semibold text-gray-900">${products.length}</div>
+                    <div class="text-xs text-gray-600">Products</div>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                    <div class="text-lg font-semibold text-gray-900">${data.unique_products || products.length}</div>
+                    <div class="text-xs text-gray-600">Unique</div>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-lg p-3 text-center">
+                    <div class="text-lg font-semibold text-gray-900">${data.processing_time || 'N/A'}</div>
+                    <div class="text-xs text-gray-600">Time (ms)</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Display product library
+    if (products.length === 0) {
+        libraryDiv.innerHTML = `
+            <div class="text-center py-8">
+                <i data-lucide="alert-triangle" class="w-12 h-12 mx-auto mb-4 text-yellow-400"></i>
+                <p class="text-gray-600">No products generated from this reaction</p>
+            </div>
+        `;
+    } else {
+        libraryDiv.innerHTML = `
+            <div class="space-y-4 max-h-96 overflow-y-auto">
+                ${products.map((product, index) => `
+                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <h4 class="font-medium text-gray-900">Product ${index + 1}</h4>
+                                    ${product.yield ? `
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            ${product.yield}% yield
+                                        </span>
+                                    ` : ''}
+                                </div>
+                                <code class="text-sm text-gray-600 break-all">${product.smiles}</code>
+                                ${product.name ? `<p class="text-sm text-gray-500 mt-1">${product.name}</p>` : ''}
+                            </div>
+                            <div class="ml-4 flex-shrink-0">
+                                <div class="text-sm text-gray-500">
+                                    MW: ${product.molecular_weight ? product.molecular_weight.toFixed(1) : 'N/A'}
+                                </div>
+                            </div>
+                        </div>
+                        ${product.reaction_center ? `
+                            <div class="mt-3 text-xs text-gray-500">
+                                Reaction center: ${product.reaction_center}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    // Display statistics
+    displayReactionStatistics(data, products);
+    
+    // Re-initialize icons
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
+function displayReactionStatistics(data, products) {
+    const statsDiv = document.getElementById('reaction-stats');
+    
+    if (products.length === 0) {
+        statsDiv.innerHTML = `
+            <div class="text-center py-8">
+                <i data-lucide="bar-chart-2" class="w-12 h-12 mx-auto mb-4 text-gray-300"></i>
+                <p class="text-gray-600">No statistics available</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Calculate molecular weight distribution
+    const weights = products.filter(p => p.molecular_weight).map(p => p.molecular_weight);
+    const avgWeight = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
+    const minWeight = weights.length > 0 ? Math.min(...weights) : 0;
+    const maxWeight = weights.length > 0 ? Math.max(...weights) : 0;
+    
+    // Calculate other statistics
+    const uniqueSmiles = [...new Set(products.map(p => p.smiles))];
+    const duplicates = products.length - uniqueSmiles.length;
+    
+    statsDiv.innerHTML = `
+        <div class="space-y-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-blue-50 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-blue-900">${products.length}</div>
+                    <div class="text-sm text-blue-700">Total Products</div>
+                </div>
+                <div class="bg-green-50 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-green-900">${uniqueSmiles.length}</div>
+                    <div class="text-sm text-green-700">Unique Products</div>
+                </div>
+                <div class="bg-yellow-50 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-yellow-900">${duplicates}</div>
+                    <div class="text-sm text-yellow-700">Duplicates</div>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-4 text-center">
+                    <div class="text-2xl font-bold text-purple-900">${avgWeight.toFixed(0)}</div>
+                    <div class="text-sm text-purple-700">Avg MW</div>
+                </div>
+            </div>
+            
+            ${weights.length > 0 ? `
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-3">Molecular Weight Distribution</h4>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <div class="text-lg font-semibold text-gray-900">${minWeight.toFixed(1)}</div>
+                            <div class="text-xs text-gray-600">Min MW</div>
+                        </div>
+                        <div>
+                            <div class="text-lg font-semibold text-gray-900">${avgWeight.toFixed(1)}</div>
+                            <div class="text-xs text-gray-600">Avg MW</div>
+                        </div>
+                        <div>
+                            <div class="text-lg font-semibold text-gray-900">${maxWeight.toFixed(1)}</div>
+                            <div class="text-xs text-gray-600">Max MW</div>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-start space-x-3">
+                    <i data-lucide="info" class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"></i>
+                    <div class="text-sm text-blue-800">
+                        <p class="font-medium mb-1">Reaction Summary</p>
+                        <p>Generated ${products.length} products with ${uniqueSmiles.length} unique structures. 
+                        ${duplicates > 0 ? `${duplicates} duplicates were found and ${data.mode === 'unique' ? 'removed' : 'retained'}.` : 'No duplicates detected.'}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function enableExportButtons() {
+    document.getElementById('export-products-btn').disabled = false;
+    document.getElementById('export-reaction-btn').disabled = false;
+}
+
+function resetResults() {
+    const statusSpan = document.getElementById('reaction-status');
+    statusSpan.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800';
+    statusSpan.textContent = 'Failed';
+    
+    document.getElementById('reaction-overview').innerHTML = `
+        <div class="flex items-center justify-center h-48 text-red-500">
+            <div class="text-center">
+                <i data-lucide="alert-circle" class="w-16 h-16 mx-auto mb-4"></i>
+                <p class="text-lg font-medium">Processing Failed</p>
+                <p class="text-sm">Please check your input and try again</p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('product-library').innerHTML = `
+        <div class="flex items-center justify-center h-64 text-gray-500">
+            <div class="text-center">
+                <i data-lucide="layers" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                <p class="text-sm">Products will appear here</p>
+            </div>
+        </div>
+    `;
+}
+
+function exportProducts() {
+    if (!window.lastReactionData) return;
+    
+    const data = window.lastReactionData;
+    const products = data.products || [];
+    
+    if (products.length === 0) {
+        showAlert('No products to export', 'warning');
+        return;
+    }
+    
+    // Create CSV content
+    let csv = 'Product_ID,SMILES,Name,Molecular_Weight,Yield\n';
+    products.forEach((product, index) => {
+        csv += `${index + 1},"${product.smiles}","${product.name || ''}"`;
+        csv += `,"${product.molecular_weight || ''}","${product.yield || ''}"\n`;
+    });
+    
+    // Download CSV file
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reaction_products_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showAlert('Products exported successfully', 'success');
+}
+
+function exportReactionData() {
+    if (!window.lastReactionData) return;
+    
+    const data = window.lastReactionData;
+    
+    // Download JSON file
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reaction_data_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showAlert('Reaction data exported successfully', 'success');
+}
+
+function showAlert(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 max-w-sm p-4 rounded-lg shadow-lg border ${
+        type === 'danger' ? 'bg-red-50 border-red-200 text-red-800' :
+        type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+        type === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+        'bg-blue-50 border-blue-200 text-blue-800'
+    }`;
+    toast.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i data-lucide="${
+                type === 'danger' ? 'alert-circle' : 
+                type === 'warning' ? 'alert-triangle' : 
+                type === 'success' ? 'check-circle' : 'info'
+            }" class="w-4 h-4"></i>
+            <span class="text-sm font-medium">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    lucide.createIcons();
+    
+    setTimeout(() => toast.remove(), 5000);
+}
+
+async function processBatchReaction() {
+    const fileInput = document.getElementById('batch-reactions-file');
+    const reactionType = document.getElementById('reaction-type').value;
+    const maxProducts = parseInt(document.getElementById('max-products').value);
+    const file = fileInput.files[0];
+
+    if (!file) {
+        showAlert('Please select a file', 'warning');
+        return;
+    }
+
+    // Check if it's an RXN file
+    if (file.name.toLowerCase().endsWith('.rxn')) {
+        await uploadRxnFile(file);
+        return;
+    }
+
+    // For other files, process as batch reaction
+    const reactionSmarts = document.getElementById('reaction-smarts').value.trim();
+    const coreStructure = document.getElementById('core-structure').value.trim();
+
+    if (reactionType === 'smarts' && !reactionSmarts) {
+        showAlert('Please enter reaction SMARTS', 'warning');
+        return;
+    }
+
+    if (reactionType === 'enumeration' && !coreStructure) {
+        showAlert('Please enter core structure', 'warning');
+        return;
+    }
+
+    try {
+        document.getElementById('reaction-results').innerHTML = `
+            <div class="flex flex-col items-center justify-center h-64 space-y-3">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <div class="text-center">
+                    <p class="text-gray-700 font-medium">Processing ${file.name}...</p>
+                    <p class="text-sm text-gray-500">Running reactions on uploaded molecules</p>
+                </div>
+            </div>
+        `;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('reaction_type', reactionType);
+        formData.append('max_products', maxProducts);
+        formData.append('mode', 'all');
+
+        if (reactionType === 'smarts') {
+            formData.append('reaction_smarts', reactionSmarts);
+        } else if (reactionType === 'enumeration') {
+            formData.append('core_structure', coreStructure);
+        }
+
+        const response = await fetch('/api/v1/reactions/process_file', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            displayBatchReactionResults(data);
+        } else {
+            showAlert(data.error || 'Reaction processing failed', 'danger');
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+    }
+}
+
+async function uploadRxnFile(file) {
+    try {
+        document.getElementById('reaction-results').innerHTML = `
+            <div class="flex flex-col items-center justify-center h-64 space-y-3">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <p class="text-gray-700 font-medium">Parsing RXN file...</p>
+            </div>
+        `;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/v1/reactions/upload_rxn', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            displayRxnResults(data);
+        } else {
+            showAlert(data.error || 'RXN file parsing failed', 'danger');
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+    }
+}
+
+function displayBatchReactionResults(data) {
+    const products = data.products || [];
+
+    let html = `
+        <div class="mb-6 bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Batch Reaction Results</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <span class="text-gray-600">File:</span>
+                    <span class="ml-2 font-medium">${data.file_name || 'uploaded file'}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Products:</span>
+                    <span class="ml-2 font-bold text-green-700">${products.length}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-3 max-h-96 overflow-y-auto">
+            ${products.slice(0, 50).map((product, idx) => `
+                <div class="p-4 border border-gray-200 rounded-lg hover:border-orange-300 hover:shadow-sm transition-all">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-medium text-gray-900">Product ${idx + 1}</h4>
+                        <span class="text-xs text-gray-600">${product.yield || 'N/A'}</span>
+                    </div>
+                    <code class="text-xs text-gray-600 break-all">${product.smiles || product}</code>
+                </div>
+            `).join('')}
+            ${products.length > 50 ? `
+                <div class="text-center text-sm text-gray-500 py-3">
+                    Showing 50 of ${products.length} products
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    document.getElementById('reaction-results').innerHTML = html;
+    lucide.createIcons();
+}
+
+function displayRxnResults(data) {
+    let html = `
+        <div class="mb-6 bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">RXN File Parsed</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <span class="text-gray-600">File:</span>
+                    <span class="ml-2 font-medium">${data.file_name}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Reactants:</span>
+                    <span class="ml-2 font-medium">${data.num_reactants}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Products:</span>
+                    <span class="ml-2 font-medium">${data.num_products}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <div class="p-4 bg-white border border-gray-200 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-2">Reaction SMARTS</h4>
+                <code class="text-sm text-gray-700 break-all">${data.reaction_smarts}</code>
+            </div>
+
+            <div class="p-4 bg-white border border-gray-200 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-2">Reactants</h4>
+                <div class="space-y-1">
+                    ${data.reactants.map((r, i) => `
+                        <div class="text-sm"><strong>${i+1}:</strong> <code class="text-gray-600">${r}</code></div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="p-4 bg-white border border-gray-200 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-2">Products</h4>
+                <div class="space-y-1">
+                    ${data.products.map((p, i) => `
+                        <div class="text-sm"><strong>${i+1}:</strong> <code class="text-gray-600">${p}</code></div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('reaction-results').innerHTML = html;
+    lucide.createIcons();
+}
+</script>
+{% endblock %}

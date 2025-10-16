@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+
+{% block title %}NuGenRDKit - Modern Cheminformatics Web Interface{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="relative bg-gradient-to-r from-primary-600 to-primary-800 overflow-hidden">
+    <div class="absolute inset-0">
+        <div class="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-800 mix-blend-multiply"></div>
+        <div class="absolute inset-0 opacity-20" style="background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="4"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+    </div>
+    <div class="relative max-w-7xl mx-auto py-24 px-4 sm:py-32 sm:px-6 lg:px-8">
+        <div class="lg:grid lg:grid-cols-2 lg:gap-8 lg:items-center">
+            <div>
+                <!-- Large molecule icon -->
+                <div class="mb-8">
+                    <div class="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
+                        <svg class="w-14 h-14" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Central atom -->
+                            <circle cx="16" cy="16" r="2.5" fill="white"/>
+                            <!-- Outer atoms -->
+                            <circle cx="16" cy="9" r="2" fill="white"/>
+                            <circle cx="22" cy="12.5" r="2" fill="white"/>
+                            <circle cx="22" cy="19.5" r="2" fill="white"/>
+                            <circle cx="16" cy="23" r="2" fill="white"/>
+                            <circle cx="10" cy="19.5" r="2" fill="white"/>
+                            <circle cx="10" cy="12.5" r="2" fill="white"/>
+                            <!-- Bonds -->
+                            <line x1="16" y1="16" x2="16" y2="9" stroke="white" stroke-width="1.5"/>
+                            <line x1="16" y1="16" x2="22" y2="12.5" stroke="white" stroke-width="1.5"/>
+                            <line x1="16" y1="16" x2="22" y2="19.5" stroke="white" stroke-width="1.5"/>
+                            <line x1="16" y1="16" x2="16" y2="23" stroke="white" stroke-width="1.5"/>
+                            <line x1="16" y1="16" x2="10" y2="19.5" stroke="white" stroke-width="1.5"/>
+                            <line x1="16" y1="16" x2="10" y2="12.5" stroke="white" stroke-width="1.5"/>
+                            <!-- Double bond -->
+                            <line x1="14.5" y1="15" x2="14.5" y2="10" stroke="white" stroke-width="1" opacity="0.7"/>
+                        </svg>
+                    </div>
+                </div>
+                <h1 class="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+                    Modern
+                    <span class="block text-primary-200">Cheminformatics</span>
+                </h1>
+                <p class="mt-6 text-xl text-primary-100 max-w-3xl">
+                    Explore the full power of RDKit's cheminformatics toolkit through an intuitive, modern web interface. 
+                    Calculate descriptors, generate fingerprints, visualize molecules, and much more.
+                </p>
+                <div class="mt-8 flex flex-col sm:flex-row gap-4">
+                    <a href="{{ url_for('structure') }}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-primary-700 bg-white hover:bg-primary-50 transition-colors">
+                        <i data-lucide="box" class="w-5 h-5 mr-2"></i>
+                        Get Started
+                    </a>
+                    <a href="#features" class="inline-flex items-center px-6 py-3 border-2 border-primary-300 text-base font-medium rounded-lg text-white hover:bg-primary-700 transition-colors">
+                        <i data-lucide="info" class="w-5 h-5 mr-2"></i>
+                        Learn More
+                    </a>
+                </div>
+            </div>
+            <div class="mt-12 lg:mt-0">
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+                    <div id="hero-molecule" class="w-full h-80 flex items-center justify-center">
+                        <div class="text-white/60 text-center">
+                            <i data-lucide="flask-conical" class="w-16 h-16 mx-auto mb-4"></i>
+                            <p>Molecular visualization will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<section id="features" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+            <h2 class="text-3xl font-bold text-gray-900 sm:text-4xl">
+                Comprehensive Cheminformatics Suite
+            </h2>
+            <p class="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+                Access the complete range of RDKit functionality through modern, intuitive interfaces designed for researchers and developers.
+            </p>
+        </div>
+
+        <div class="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {% set features = [
+                ('structure', 'Molecular Structure', 'box', 'Convert between formats, validate structures, and canonicalize SMILES', 'text-blue-600', 'bg-blue-50'),
+                ('descriptors', 'Descriptors', 'bar-chart-3', 'Calculate 217+ molecular descriptors including Lipinski properties', 'text-green-600', 'bg-green-50'),
+                ('fingerprints', 'Fingerprints', 'fingerprint', 'Generate Morgan, RDKit, MACCS and other fingerprint types', 'text-purple-600', 'bg-purple-50'),
+                ('similarity', 'Similarity', 'search', 'Calculate molecular similarity and perform substructure searches', 'text-orange-600', 'bg-orange-50'),
+                ('coordinates', '3D Coordinates', 'box', 'Generate 2D depictions and 3D molecular conformations', 'text-cyan-600', 'bg-cyan-50'),
+                ('properties', 'Properties', 'flask-conical', 'Analyze drug-likeness, ADMET properties, and molecular characteristics', 'text-pink-600', 'bg-pink-50'),
+                ('reactions', 'Reactions', 'zap', 'Process chemical reactions and enumerate product libraries', 'text-yellow-600', 'bg-yellow-50'),
+                ('visualization', 'Visualization', 'image', 'Create publication-quality molecular graphics and interactive views', 'text-indigo-600', 'bg-indigo-50')
+            ] %}
+            
+            {% for route, title, icon, description, text_color, bg_color in features %}
+            <div class="feature-card group cursor-pointer" onclick="window.location='{{ url_for(route) }}'">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 group-hover:border-primary-200 h-full">
+                    <div class="flex items-center justify-center w-12 h-12 {{ bg_color }} rounded-lg mb-4">
+                        <i data-lucide="{{ icon }}" class="w-6 h-6 {{ text_color }}"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">{{ title }}</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">{{ description }}</p>
+                    <div class="mt-4 flex items-center text-primary-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span>Explore</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-1"></i>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Advanced Search Section -->
+<section class="py-16 bg-gradient-to-br from-gray-50 to-blue-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 sm:text-4xl">
+                Quick Analysis
+            </h2>
+            <p class="mt-4 text-xl text-gray-600">
+                Enter a molecule to get instant analysis across all tools
+            </p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+            <div class="space-y-6">
+                <div class="relative">
+                    <label for="global-search" class="block text-sm font-medium text-gray-700 mb-2">
+                        Molecule Search & Analysis
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="global-search" 
+                               class="w-full px-4 py-4 pr-12 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-lg"
+                               placeholder="Enter SMILES, name, or draw structure..." 
+                               value="CC(=O)OC1=CC=CC=C1C(=O)O">
+                        <button id="search-btn" 
+                                class="absolute inset-y-0 right-0 flex items-center px-4 text-primary-600 hover:text-primary-700">
+                            <i data-lucide="search" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500">
+                        Try: aspirin, caffeine, CC(=O)OC1=CC=CC=C1C(=O)O, or c1ccccc1
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button class="quick-example px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-primary-100 hover:text-primary-700 transition-colors text-sm"
+                            data-smiles="CC(=O)OC1=CC=CC=C1C(=O)O" data-name="Aspirin">
+                        Aspirin
+                    </button>
+                    <button class="quick-example px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-primary-100 hover:text-primary-700 transition-colors text-sm"
+                            data-smiles="CN1C=NC2=C1C(=O)N(C(=O)N2C)C" data-name="Caffeine">
+                        Caffeine
+                    </button>
+                    <button class="quick-example px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-primary-100 hover:text-primary-700 transition-colors text-sm"
+                            data-smiles="CCO" data-name="Ethanol">
+                        Ethanol
+                    </button>
+                    <button class="quick-example px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-primary-100 hover:text-primary-700 transition-colors text-sm"
+                            data-smiles="c1ccccc1" data-name="Benzene">
+                        Benzene
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Results -->
+            <div id="search-results" class="mt-8 hidden">
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Analysis Results</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        
+                        <!-- Structure Preview -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="font-medium text-gray-900 mb-2 flex items-center">
+                                <i data-lucide="box" class="w-4 h-4 mr-2"></i>
+                                Structure
+                            </h4>
+                            <div id="search-structure" class="bg-white rounded border h-32 flex items-center justify-center">
+                                <span class="text-gray-400 text-sm">Structure will appear here</span>
+                            </div>
+                        </div>
+
+                        <!-- Properties Summary -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="font-medium text-gray-900 mb-2 flex items-center">
+                                <i data-lucide="bar-chart-3" class="w-4 h-4 mr-2"></i>
+                                Properties
+                            </h4>
+                            <div id="search-properties" class="space-y-1 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">MW:</span>
+                                    <span class="font-mono">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">LogP:</span>
+                                    <span class="font-mono">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">HBD:</span>
+                                    <span class="font-mono">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">HBA:</span>
+                                    <span class="font-mono">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="font-medium text-gray-900 mb-3 flex items-center">
+                                <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
+                                Quick Actions
+                            </h4>
+                            <div class="space-y-2">
+                                <button class="action-btn w-full text-left px-3 py-2 bg-white rounded border hover:border-primary-200 hover:bg-primary-50 transition-colors text-sm"
+                                        data-action="descriptors">
+                                    Calculate Descriptors
+                                </button>
+                                <button class="action-btn w-full text-left px-3 py-2 bg-white rounded border hover:border-primary-200 hover:bg-primary-50 transition-colors text-sm"
+                                        data-action="fingerprints">
+                                    Generate Fingerprints
+                                </button>
+                                <button class="action-btn w-full text-left px-3 py-2 bg-white rounded border hover:border-primary-200 hover:bg-primary-50 transition-colors text-sm"
+                                        data-action="visualization">
+                                    Visualize Structure
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Start Section -->
+<section class="py-24 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+            <h2 class="text-3xl font-bold text-gray-900 sm:text-4xl">
+                Quick Start
+            </h2>
+            <p class="mt-4 text-xl text-gray-600">
+                Get started with NuGenRDKit in just a few clicks
+            </p>
+        </div>
+
+        <div class="mt-16 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-6 mx-auto">
+                    <span class="text-2xl font-bold text-primary-600">1</span>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Choose a Tool</h3>
+                <p class="text-gray-600">Select from our comprehensive suite of cheminformatics tools based on your analysis needs.</p>
+            </div>
+            
+            <div class="text-center">
+                <div class="flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-6 mx-auto">
+                    <span class="text-2xl font-bold text-primary-600">2</span>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Input Your Data</h3>
+                <p class="text-gray-600">Enter your molecular data using SMILES strings, upload files, or draw structures directly.</p>
+            </div>
+            
+            <div class="text-center">
+                <div class="flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-6 mx-auto">
+                    <span class="text-2xl font-bold text-primary-600">3</span>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Get Results</h3>
+                <p class="text-gray-600">View, analyze, and export your results in various formats for further analysis.</p>
+            </div>
+        </div>
+
+        <div class="mt-12 text-center">
+            <a href="{{ url_for('structure') }}" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors">
+                <i data-lucide="play" class="w-5 h-5 mr-2"></i>
+                Start Analyzing
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+            <div>
+                <div class="text-4xl font-bold text-primary-600">217+</div>
+                <div class="text-sm font-medium text-gray-600 uppercase tracking-wide">Molecular Descriptors</div>
+            </div>
+            <div>
+                <div class="text-4xl font-bold text-primary-600">8</div>
+                <div class="text-sm font-medium text-gray-600 uppercase tracking-wide">Fingerprint Types</div>
+            </div>
+            <div>
+                <div class="text-4xl font-bold text-primary-600">50+</div>
+                <div class="text-sm font-medium text-gray-600 uppercase tracking-wide">API Endpoints</div>
+            </div>
+            <div>
+                <div class="text-4xl font-bold text-primary-600">∞</div>
+                <div class="text-sm font-medium text-gray-600 uppercase tracking-wide">Possibilities</div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load example molecule in hero section
+    if (window.app) {
+        window.app.loadHeroMolecule();
+    }
+    
+    // Global search functionality
+    const searchInput = document.getElementById('global-search');
+    const searchBtn = document.getElementById('search-btn');
+    const searchResults = document.getElementById('search-results');
+    
+    // Search button handler
+    searchBtn.addEventListener('click', function() {
+        performGlobalSearch();
+    });
+    
+    // Enter key handler
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            performGlobalSearch();
+        }
+    });
+    
+    // Quick example handlers
+    document.querySelectorAll('.quick-example').forEach(button => {
+        button.addEventListener('click', function() {
+            const smiles = this.getAttribute('data-smiles');
+            const name = this.getAttribute('data-name');
+            searchInput.value = smiles;
+            performGlobalSearch();
+        });
+    });
+    
+    // Action button handlers
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('action-btn')) {
+            const action = e.target.getAttribute('data-action');
+            const smiles = searchInput.value.trim();
+            
+            if (smiles) {
+                // Navigate to specific page with SMILES pre-filled
+                const url = new URL(`/${action}`, window.location.origin);
+                url.searchParams.set('smiles', smiles);
+                window.location.href = url.toString();
+            }
+        }
+    });
+    
+    // Auto-search on page load
+    if (searchInput.value.trim()) {
+        performGlobalSearch();
+    }
+});
+
+async function performGlobalSearch() {
+    const smiles = document.getElementById('global-search').value.trim();
+    const resultsDiv = document.getElementById('search-results');
+    const structureDiv = document.getElementById('search-structure');
+    const propertiesDiv = document.getElementById('search-properties');
+    
+    if (!smiles) {
+        showAlert('Please enter a molecule to search', 'warning');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        structureDiv.innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+            </div>
+        `;
+        
+        propertiesDiv.innerHTML = `
+            <div class="space-y-1 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">MW:</span>
+                    <span class="font-mono animate-pulse">...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">LogP:</span>
+                    <span class="font-mono animate-pulse">...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">HBD:</span>
+                    <span class="font-mono animate-pulse">...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">HBA:</span>
+                    <span class="font-mono animate-pulse">...</span>
+                </div>
+            </div>
+        `;
+        
+        // Show results section
+        resultsDiv.classList.remove('hidden');
+        
+        // Perform parallel requests
+        const [structureResponse, propertiesResponse] = await Promise.all([
+            fetch('/api/v1/visualization/draw_svg', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ smiles, width: 200, height: 120 })
+            }),
+            fetch('/api/v1/properties/physicochemical', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ smiles })
+            })
+        ]);
+        
+        const structureData = await structureResponse.json();
+        const propertiesData = await propertiesResponse.json();
+        
+        // Display structure
+        if (structureData.success && structureData.svg) {
+            structureDiv.innerHTML = structureData.svg;
+        } else {
+            structureDiv.innerHTML = `
+                <div class="flex items-center justify-center h-full text-red-500">
+                    <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                </div>
+            `;
+        }
+        
+        // Display properties
+        if (propertiesData.success) {
+            const props = propertiesData.properties;
+            propertiesDiv.innerHTML = `
+                <div class="space-y-1 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">MW:</span>
+                        <span class="font-mono">${props.molecular_weight ? props.molecular_weight.toFixed(1) : 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">LogP:</span>
+                        <span class="font-mono">${props.logp ? props.logp.toFixed(2) : 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">HBD:</span>
+                        <span class="font-mono">${props.num_h_donors || 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">HBA:</span>
+                        <span class="font-mono">${props.num_h_acceptors || 'N/A'}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            propertiesDiv.innerHTML = `
+                <div class="text-center text-red-500 text-sm">
+                    <i data-lucide="alert-circle" class="w-4 h-4 mx-auto mb-1"></i>
+                    <p>Analysis failed</p>
+                </div>
+            `;
+        }
+        
+        // Re-initialize icons
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+        
+    } catch (error) {
+        console.error('Search error:', error);
+        showAlert('Search failed. Please try again.', 'danger');
+        
+        // Show error states
+        structureDiv.innerHTML = `
+            <div class="flex items-center justify-center h-full text-red-500">
+                <i data-lucide="wifi-off" class="w-6 h-6"></i>
+            </div>
+        `;
+        
+        propertiesDiv.innerHTML = `
+            <div class="text-center text-red-500 text-sm">
+                <i data-lucide="wifi-off" class="w-4 h-4 mx-auto mb-1"></i>
+                <p>Network error</p>
+            </div>
+        `;
+        
+        // Re-initialize icons
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    }
+}
+
+function showAlert(message, type) {
+    if (window.app) {
+        window.app.showToast(message, type);
+    }
+}
+</script>
+{% endblock %}

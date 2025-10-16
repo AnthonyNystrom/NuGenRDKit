@@ -1,0 +1,3058 @@
+{% extends "base.html" %}
+
+{% block title %}Molecular Visualization - NuGenRDKit{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex items-center space-x-3 mb-4">
+            <div class="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-lg">
+                <i data-lucide="image" class="w-6 h-6 text-indigo-600"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Molecular Visualization</h1>
+                <p class="text-gray-600">Create publication-quality molecular graphics and interactive views</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Input Section -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                    <i data-lucide="palette" class="w-5 h-5 mr-2"></i>
+                    Visualization Settings
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="viz-input" class="block text-sm font-medium text-gray-700 mb-2">
+                            SMILES String
+                        </label>
+                        <input type="text" 
+                               id="viz-input" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors" 
+                               placeholder="e.g., aspirin" 
+                               value="CC(=O)OC1=CC=CC=C1C(=O)O">
+                    </div>
+                    
+                    <div>
+                        <label for="viz-type" class="block text-sm font-medium text-gray-700 mb-2">
+                            Visualization Type
+                        </label>
+                        <select id="viz-type"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors">
+                            <optgroup label="Basic Visualization">
+                                <option value="2d">2D Structure</option>
+                                <option value="3d">3D Model</option>
+                                <option value="surface">Molecular Surface</option>
+                                <option value="pharmacophore">Pharmacophore</option>
+                                <option value="scaffold">Scaffold Analysis</option>
+                            </optgroup>
+                            <optgroup label="Advanced Analysis">
+                                <option value="similarity_map">Similarity Map</option>
+                                <option value="fingerprint_bit">Fingerprint Bit</option>
+                                <option value="fingerprint_env">Fingerprint Environment</option>
+                                <option value="matrix_grid">Matrix Grid</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <!-- 2D Options -->
+                    <div id="2d-options" class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="image-width" class="block text-xs text-gray-600 mb-1">Width</label>
+                                <input type="number" id="image-width" 
+                                       class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                       value="400" min="200" max="1000">
+                            </div>
+                            <div>
+                                <label for="image-height" class="block text-xs text-gray-600 mb-1">Height</label>
+                                <input type="number" id="image-height" 
+                                       class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                       value="400" min="200" max="1000">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="drawing-style" class="block text-xs text-gray-600 mb-1">Drawing Style</label>
+                            <select id="drawing-style" 
+                                    class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                <option value="default">Default</option>
+                                <option value="wireframe">Wireframe</option>
+                                <option value="publication">Publication</option>
+                                <option value="compact">Compact</option>
+                                <option value="cross">Cross</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="show-atom-labels" class="rounded border-gray-300">
+                                <span class="ml-2 text-xs text-gray-600">Atom Labels</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="show-atom-indices" class="rounded border-gray-300">
+                                <span class="ml-2 text-xs text-gray-600">Atom Indices</span>
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="highlight-substructure" class="rounded border-gray-300">
+                                <span class="ml-2 text-xs text-gray-600">Highlight Substructure</span>
+                            </label>
+                        </div>
+                        
+                        <div id="substructure-input" class="hidden">
+                            <input type="text" id="substructure-smarts" 
+                                   class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                   placeholder="SMARTS pattern">
+                        </div>
+                    </div>
+                    
+                    <!-- 3D Options -->
+                    <div id="3d-options" class="space-y-3 hidden">
+                        <div>
+                            <label for="conf-generation" class="block text-xs text-gray-600 mb-1">Conformer Generation</label>
+                            <select id="conf-generation"
+                                    class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                <option value="fast">Fast</option>
+                                <option value="optimized">Optimized</option>
+                                <option value="multiple">Multiple Conformers</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="render-style" class="block text-xs text-gray-600 mb-1">Render Style</label>
+                            <select id="render-style" onchange="syncAllStyleDropdowns(this.value)"
+                                    class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                <option value="stick">Stick</option>
+                                <option value="sphere">Ball & Stick</option>
+                                <option value="line">Wireframe</option>
+                                <option value="cross">Cross</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="color-scheme" class="block text-xs text-gray-600 mb-1">Color Scheme</label>
+                            <select id="color-scheme" onchange="update3DColor(this.value)"
+                                    class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                <option value="default">By Element</option>
+                                <option value="carbon">Carbon</option>
+                                <option value="spectrum">Spectrum</option>
+                                <option value="white">White</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Similarity Map Options -->
+                    <div id="similarity-map-options" class="space-y-3" style="display: none;">
+                        <div>
+                            <label for="sim-map-ref-smiles" class="block text-sm font-medium text-gray-700 mb-1">
+                                Reference Molecule SMILES
+                            </label>
+                            <input type="text"
+                                   id="sim-map-ref-smiles"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   placeholder="e.g., CC(=O)OC1=CC=CC=C1C(=O)O">
+                        </div>
+                        <div>
+                            <label for="sim-map-fp-type" class="block text-sm font-medium text-gray-700 mb-1">
+                                Fingerprint Type
+                            </label>
+                            <select id="sim-map-fp-type" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                <option value="morgan">Morgan</option>
+                                <option value="ap">Atom Pairs</option>
+                                <option value="tt">Topological Torsions</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Fingerprint Bit Options -->
+                    <div id="fingerprint-bit-options" class="space-y-3" style="display: none;">
+                        <div>
+                            <label for="fp-bit-type" class="block text-sm font-medium text-gray-700 mb-1">
+                                Fingerprint Type
+                            </label>
+                            <select id="fp-bit-type" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                <option value="morgan">Morgan</option>
+                                <option value="rdkit">RDKit</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="fp-bit-id" class="block text-sm font-medium text-gray-700 mb-1">
+                                Bit ID
+                            </label>
+                            <input type="number"
+                                   id="fp-bit-id"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   value="0" min="0" max="2048">
+                        </div>
+                        <div>
+                            <label for="fp-bit-radius" class="block text-sm font-medium text-gray-700 mb-1">
+                                Radius (Morgan only)
+                            </label>
+                            <input type="number"
+                                   id="fp-bit-radius"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   value="2" min="1" max="5">
+                        </div>
+                    </div>
+
+                    <!-- Fingerprint Environment Options -->
+                    <div id="fingerprint-env-options" class="space-y-3" style="display: none;">
+                        <div>
+                            <label for="fp-env-type" class="block text-sm font-medium text-gray-700 mb-1">
+                                Fingerprint Type
+                            </label>
+                            <select id="fp-env-type" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                <option value="morgan">Morgan</option>
+                                <option value="rdkit">RDKit</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="fp-env-atom-id" class="block text-sm font-medium text-gray-700 mb-1">
+                                Atom ID
+                            </label>
+                            <input type="number"
+                                   id="fp-env-atom-id"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   value="0" min="0">
+                        </div>
+                        <div>
+                            <label for="fp-env-radius" class="block text-sm font-medium text-gray-700 mb-1">
+                                Radius
+                            </label>
+                            <input type="number"
+                                   id="fp-env-radius"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   value="2" min="1" max="5">
+                        </div>
+                    </div>
+
+                    <!-- Matrix Grid Options -->
+                    <div id="matrix-grid-options" class="space-y-3" style="display: none;">
+                        <div>
+                            <label for="matrix-smiles" class="block text-sm font-medium text-gray-700 mb-1">
+                                SMILES Matrix (one row per line, comma-separated)
+                            </label>
+                            <textarea id="matrix-smiles"
+                                      rows="4"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors font-mono text-sm"
+                                      placeholder="CCO,CCC,CCCC&#10;c1ccccc1,c1cccnc1,c1ccoc1">CCO,CCC,CCCC
+c1ccccc1,c1cccnc1,c1ccoc1</textarea>
+                        </div>
+                        <div>
+                            <label for="matrix-highlight" class="block text-sm font-medium text-gray-700 mb-1">
+                                Highlight Substructure (SMARTS, optional)
+                            </label>
+                            <input type="text"
+                                   id="matrix-highlight"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                                   placeholder="e.g., c1ccccc1">
+                        </div>
+                    </div>
+
+                    <!-- Batch File Upload -->
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="upload" class="w-4 h-4 mr-2 text-indigo-600"></i>
+                            <span class="text-sm font-medium text-indigo-900">Batch: Upload molecule file</span>
+                        </div>
+                        <input type="file"
+                               id="batch-viz-file"
+                               accept=".smi,.smiles,.sdf,.csv,.txt"
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                        <div class="mt-2 flex items-center space-x-2">
+                            <label class="text-xs text-gray-600">Output:</label>
+                            <select id="viz-batch-format" class="text-xs border-gray-300 rounded px-2 py-1">
+                                <option value="grid">Image Grid</option>
+                                <option value="zip">ZIP Archive</option>
+                            </select>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-1">Generate structure images (.smi, .sdf, .csv - max 50 MB)</p>
+                    </div>
+
+                    <button id="generate-viz-btn" 
+                            class="w-full inline-flex items-center justify-center px-4 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors">
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                        Generate Visualization
+                    </button>
+                </div>
+
+                <!-- Example Molecules -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Example Molecules</h3>
+                    <div class="space-y-2">
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CC(=O)OC1=CC=CC=C1C(=O)O"
+                                data-name="Aspirin">
+                            Aspirin (Complex aromatic)
+                        </button>
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CN1C=NC2=C1C(=O)N(C(=O)N2C)C"
+                                data-name="Caffeine">
+                            Caffeine (Heterocyclic)
+                        </button>
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CC12CCC3C(C1CCC2O)CCC4=CC(=O)CCC34C"
+                                data-name="Testosterone">
+                            Testosterone (Steroid)
+                        </button>
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="C1=CC=C(C=C1)C2=CC=CC=C2"
+                                data-name="Biphenyl">
+                            Biphenyl (Simple aromatic)
+                        </button>
+                        <button class="example-molecule w-full text-left p-2 text-sm border border-gray-200 rounded hover:border-primary-200 hover:bg-primary-50 transition-colors" 
+                                data-smiles="CC(C)(C)C1=CC=C(C=C1)C(C)(C)C"
+                                data-name="BHT">
+                            BHT (Antioxidant)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Export Options -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Export Options</h3>
+                    <div class="space-y-2">
+                        <button id="export-png-btn" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                                disabled>
+                            <i data-lucide="image" class="w-4 h-4 mr-2"></i>
+                            Export PNG
+                        </button>
+                        <button id="export-svg-btn" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                                disabled>
+                            <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                            Export SVG
+                        </button>
+                        <button id="export-pdf-btn" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50" 
+                                disabled>
+                            <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                            Export PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="lg:col-span-2">
+            <div class="space-y-6">
+                <!-- Main Visualization -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                            <i data-lucide="monitor" class="w-5 h-5 mr-2"></i>
+                            Molecular Visualization
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <button id="fullscreen-btn" 
+                                    class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 transition-colors">
+                                <i data-lucide="maximize" class="w-4 h-4 mr-1"></i>
+                                Fullscreen
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="main-visualization" class="min-h-[500px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                        <div class="text-center text-gray-500">
+                            <i data-lucide="image" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                            <p class="text-lg font-medium">Ready to generate visualization</p>
+                            <p class="text-sm">Enter a SMILES string and click Generate</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Molecular Information -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <i data-lucide="info" class="w-5 h-5 mr-2"></i>
+                        Molecular Information
+                    </h3>
+                    
+                    <div id="molecular-info" class="min-h-[150px]">
+                        <div class="flex items-center justify-center h-32 text-gray-500">
+                            <div class="text-center">
+                                <i data-lucide="database" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                                <p class="text-sm">Molecular information will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualization Gallery -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <i data-lucide="grid" class="w-5 h-5 mr-2"></i>
+                            Visualization Gallery
+                        </h3>
+                        <button id="clear-gallery-btn" 
+                                class="text-sm text-red-600 hover:text-red-800 transition-colors">
+                            Clear Gallery
+                        </button>
+                    </div>
+                    
+                    <div id="visualization-gallery" class="grid grid-cols-2 md:grid-cols-3 gap-4 min-h-[200px]">
+                        <div class="flex items-center justify-center h-32 text-gray-500 col-span-full">
+                            <div class="text-center">
+                                <i data-lucide="grid" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                                <p class="text-sm">Generated visualizations will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Fullscreen mode styles */
+.fullscreen-mode {
+    background: black !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+
+.fullscreen-mode:fullscreen {
+    width: 100vw !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Ensure 3D viewer takes full available space in fullscreen */
+.fullscreen-mode #3d-viewer {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for SMILES parameter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const smilesParam = urlParams.get('smiles');
+    if (smilesParam) {
+        document.getElementById('viz-input').value = smilesParam;
+        // Auto-generate will be called at the bottom, so the molecule will be processed
+    }
+    
+    // Generate visualization button handler
+    document.getElementById('generate-viz-btn').addEventListener('click', function() {
+        generateVisualization();
+    });
+    
+    // Export button handlers
+    document.getElementById('export-png-btn').addEventListener('click', function() {
+        exportVisualization('png');
+    });
+    document.getElementById('export-svg-btn').addEventListener('click', function() {
+        exportVisualization('svg');
+    });
+    document.getElementById('export-pdf-btn').addEventListener('click', function() {
+        exportVisualization('pdf');
+    });
+    
+    // Visualization type change handler
+    document.getElementById('viz-type').addEventListener('change', function() {
+        updateVisualizationOptions();
+    });
+    
+    // Substructure highlighting toggle
+    document.getElementById('highlight-substructure').addEventListener('change', function() {
+        const substructureInput = document.getElementById('substructure-input');
+        if (this.checked) {
+            substructureInput.classList.remove('hidden');
+        } else {
+            substructureInput.classList.add('hidden');
+        }
+        // Regenerate visualization when toggled
+        generateVisualization();
+    });
+    
+    // Atom labels and indices toggles
+    document.getElementById('show-atom-labels').addEventListener('change', function() {
+        generateVisualization();
+    });
+    
+    document.getElementById('show-atom-indices').addEventListener('change', function() {
+        generateVisualization();
+    });
+    
+    // Substructure SMARTS input
+    document.getElementById('substructure-smarts').addEventListener('input', function() {
+        if (document.getElementById('highlight-substructure').checked) {
+            // Debounce the input to avoid too frequent requests
+            clearTimeout(window.substructureTimeout);
+            window.substructureTimeout = setTimeout(() => {
+                generateVisualization();
+            }, 500);
+        }
+    });
+    
+    // Example molecule handlers
+    document.querySelectorAll('.example-molecule').forEach(button => {
+        button.addEventListener('click', function() {
+            const smiles = this.getAttribute('data-smiles');
+            const name = this.getAttribute('data-name');
+            document.getElementById('viz-input').value = smiles;
+            generateVisualization();
+        });
+    });
+    
+    // Gallery management
+    document.getElementById('clear-gallery-btn').addEventListener('click', function() {
+        clearGallery();
+    });
+    
+    // View controls
+    document.getElementById('fullscreen-btn').addEventListener('click', function() {
+        toggleFullscreen();
+    });
+    
+    
+    // Initialize checkboxes to unchecked state
+    document.getElementById('show-atom-labels').checked = false;
+    document.getElementById('show-atom-indices').checked = false;
+    document.getElementById('highlight-substructure').checked = false;
+    
+    updateVisualizationOptions();
+    // Auto-generate on page load
+    generateVisualization();
+});
+
+function updateVisualizationOptions() {
+    const vizType = document.getElementById('viz-type').value;
+    const options2D = document.getElementById('2d-options');
+    const options3D = document.getElementById('3d-options');
+    const similarityMapOpts = document.getElementById('similarity-map-options');
+    const fingerprintBitOpts = document.getElementById('fingerprint-bit-options');
+    const fingerprintEnvOpts = document.getElementById('fingerprint-env-options');
+    const matrixGridOpts = document.getElementById('matrix-grid-options');
+
+    // Hide all option sections first
+    options2D.classList.add('hidden');
+    options3D.classList.add('hidden');
+    if (similarityMapOpts) similarityMapOpts.style.display = 'none';
+    if (fingerprintBitOpts) fingerprintBitOpts.style.display = 'none';
+    if (fingerprintEnvOpts) fingerprintEnvOpts.style.display = 'none';
+    if (matrixGridOpts) matrixGridOpts.style.display = 'none';
+
+    // Show appropriate options
+    if (vizType === '2d') {
+        options2D.classList.remove('hidden');
+    } else if (vizType === '3d') {
+        options3D.classList.remove('hidden');
+    } else if (vizType === 'similarity_map') {
+        if (similarityMapOpts) similarityMapOpts.style.display = 'block';
+    } else if (vizType === 'fingerprint_bit') {
+        if (fingerprintBitOpts) fingerprintBitOpts.style.display = 'block';
+    } else if (vizType === 'fingerprint_env') {
+        if (fingerprintEnvOpts) fingerprintEnvOpts.style.display = 'block';
+    } else if (vizType === 'matrix_grid') {
+        if (matrixGridOpts) matrixGridOpts.style.display = 'block';
+    }
+}
+
+async function generateVisualization() {
+    const smiles = document.getElementById('viz-input').value.trim();
+    const vizType = document.getElementById('viz-type').value;
+    const fileInput = document.getElementById('batch-viz-file');
+
+    // Check if file upload is being used
+    if (fileInput && fileInput.files.length > 0) {
+        await generateBatchVisualizations();
+        return;
+    }
+
+    if (!smiles) {
+        showAlert('Please enter a SMILES string', 'warning');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        document.getElementById('main-visualization').innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Generating ${vizType.toUpperCase()} visualization...</p>
+                </div>
+            </div>
+        `;
+        
+        // Prepare request parameters based on visualization type
+        let requestData = { smiles };
+        
+        if (vizType === '2d') {
+            requestData = {
+                ...requestData,
+                width: parseInt(document.getElementById('image-width').value),
+                height: parseInt(document.getElementById('image-height').value),
+                drawing_style: document.getElementById('drawing-style').value,
+                show_atom_labels: document.getElementById('show-atom-labels').checked,
+                show_atom_indices: document.getElementById('show-atom-indices').checked
+            };
+            
+            
+            if (document.getElementById('highlight-substructure').checked) {
+                const substructure = document.getElementById('substructure-smarts').value.trim();
+                if (substructure) {
+                    requestData.highlight_substructure = substructure;
+                }
+            }
+        } else if (vizType === '3d') {
+            requestData = {
+                ...requestData,
+                conformer_generation: document.getElementById('conf-generation').value,
+                render_style: document.getElementById('render-style').value,
+                color_scheme: document.getElementById('color-scheme').value
+            };
+        } else if (vizType === 'similarity_map') {
+            requestData = {
+                smiles,
+                ref_smiles: document.getElementById('sim-map-ref-smiles').value.trim(),
+                fp_type: document.getElementById('sim-map-fp-type').value,
+                map_type: 'similarity'
+            };
+        } else if (vizType === 'fingerprint_bit') {
+            requestData = {
+                smiles,
+                fp_type: document.getElementById('fp-bit-type').value,
+                bit_id: parseInt(document.getElementById('fp-bit-id').value),
+                radius: parseInt(document.getElementById('fp-bit-radius').value)
+            };
+        } else if (vizType === 'fingerprint_env') {
+            requestData = {
+                smiles,
+                fp_type: document.getElementById('fp-env-type').value,
+                atom_id: parseInt(document.getElementById('fp-env-atom-id').value),
+                radius: parseInt(document.getElementById('fp-env-radius').value)
+            };
+        } else if (vizType === 'matrix_grid') {
+            // Parse matrix from textarea
+            const matrixText = document.getElementById('matrix-smiles').value.trim();
+            const rows = matrixText.split('\n').filter(r => r.trim());
+            const smilesMatrix = rows.map(row => row.split(',').map(s => s.trim()));
+
+            requestData = {
+                smiles_matrix: smilesMatrix,
+                highlight_substructure: document.getElementById('matrix-highlight').value.trim() || undefined,
+                size: 200
+            };
+        }
+
+        // Make API request
+        const endpoint = vizType === '2d' ? '/api/v1/visualization/draw_svg' : `/api/v1/visualization/${vizType}`;
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayVisualization(data, smiles, vizType);
+            loadMolecularInfo(smiles);
+            enableExportButtons();
+            addToGallery(data, smiles, vizType);
+            
+            window.currentVisualizationData = data; // Store for export
+        } else {
+            // Enhanced error message with suggestions
+            let errorMsg = data.error || 'Visualization generation failed';
+            if (data.suggestion) {
+                errorMsg += '. ' + data.suggestion;
+            }
+            showAlert(errorMsg, 'danger');
+            resetVisualization();
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+        resetVisualization();
+    }
+}
+
+function displayVisualization(data, smiles, vizType) {
+    const vizDiv = document.getElementById('main-visualization');
+    
+    if (vizType === '2d' && data.svg) {
+        vizDiv.innerHTML = `
+            <div class="w-full h-full flex items-center justify-center p-4">
+                <div class="text-center">
+                    <div class="mb-4 p-4 bg-white rounded-lg shadow-inner inline-block">
+                        ${data.svg}
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <code>${smiles}</code>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else if (vizType === '3d') {
+        // Create 3D visualization with 3Dmol.js
+        create3DVisualization(data, smiles, vizDiv);
+    } else if (vizType === 'surface') {
+        // Create surface visualization
+        createSurfaceVisualization(data, smiles, vizDiv);
+    } else if (vizType === 'pharmacophore') {
+        // Create pharmacophore visualization
+        createPharmacophoreVisualization(data, smiles, vizDiv);
+    } else if (vizType === 'scaffold') {
+        // Create scaffold visualization
+        createScaffoldVisualization(data, smiles, vizDiv);
+    } else if (vizType === 'similarity_map' || vizType === 'fingerprint_bit' || vizType === 'fingerprint_env' || vizType === 'matrix_grid') {
+        // Display image-based visualizations
+        if (data.image) {
+            vizDiv.innerHTML = `
+                <div class="w-full h-full flex items-center justify-center p-4">
+                    <div class="text-center">
+                        <div class="mb-4 p-4 bg-white rounded-lg shadow-inner inline-block">
+                            <img src="${data.image}" alt="${vizType} visualization" class="max-w-full max-h-[600px]">
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            ${vizType === 'similarity_map' ? `
+                                <p><strong>Query:</strong> <code>${smiles}</code></p>
+                                ${data.ref_smiles ? `<p><strong>Reference:</strong> <code>${data.ref_smiles}</code></p>` : ''}
+                                <p><strong>FP Type:</strong> ${data.fp_type}</p>
+                            ` : vizType === 'fingerprint_bit' ? `
+                                <p><strong>Molecule:</strong> <code>${smiles}</code></p>
+                                <p><strong>FP Type:</strong> ${data.fp_type} | <strong>Bit ID:</strong> ${data.bit_id}</p>
+                            ` : vizType === 'fingerprint_env' ? `
+                                <p><strong>Molecule:</strong> <code>${smiles}</code></p>
+                                <p><strong>FP Type:</strong> ${data.fp_type} | <strong>Atom ID:</strong> ${data.atom_id} | <strong>Radius:</strong> ${data.radius}</p>
+                            ` : vizType === 'matrix_grid' ? `
+                                <p><strong>Matrix:</strong> ${data.num_rows} × ${data.num_cols}</p>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // Re-initialize icons
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
+function create3DVisualization(data, smiles, container) {
+    const atoms = data.atoms || [];
+    const bonds = data.bonds || [];
+    const numAtoms = atoms.length;
+    const numBonds = bonds.length;
+    
+    // Calculate basic 3D properties
+    let atomTypes = [];
+    let xRange = 0, yRange = 0, zRange = 0, volume = 0;
+    
+    if (atoms.length > 0) {
+        atomTypes = [...new Set(atoms.map(atom => atom.symbol))];
+        const xCoords = atoms.map(atom => atom.x);
+        const yCoords = atoms.map(atom => atom.y);
+        const zCoords = atoms.map(atom => atom.z);
+        
+        xRange = Math.max(...xCoords) - Math.min(...xCoords);
+        yRange = Math.max(...yCoords) - Math.min(...yCoords);  
+        zRange = Math.max(...zCoords) - Math.min(...zCoords);
+        volume = xRange * yRange * zRange;
+    }
+    
+    container.innerHTML = `
+        <div class="w-full h-full p-6">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">3D Molecular Structure</h2>
+                    <code class="text-sm bg-gray-100 px-2 py-1 rounded">${smiles}</code>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 3D Visualization Area -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white border border-gray-200 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-semibold text-gray-900">Interactive 3D View</h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="reset3DView()" class="text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">
+                                        <i data-lucide="refresh-cw" class="w-3 h-3 inline mr-1"></i>
+                                        Reset
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="3d-viewer" class="w-full h-96 bg-black rounded-lg border border-gray-300 relative overflow-hidden"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls and Properties -->
+                    <div class="space-y-4">
+                        <!-- 3D Controls -->
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-900 mb-3">3D Controls</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Style</label>
+                                    <select id="3d-style" onchange="syncAllStyleDropdowns(this.value)" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                        <option value="stick">Stick</option>
+                                        <option value="sphere">Ball & Stick</option>
+                                        <option value="line">Wireframe</option>
+                                        <option value="cross">Cross</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Color Scheme</label>
+                                    <select id="3d-color" onchange="update3DColor()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                        <option value="default">By Element</option>
+                                        <option value="carbon">Carbon</option>
+                                        <option value="spectrum">Spectrum</option>
+                                        <option value="white">White</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Structure Information -->
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-900 mb-3 flex items-center">
+                                <i data-lucide="info" class="w-5 h-5 mr-2"></i>
+                                Structure Information
+                            </h3>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div class="bg-gray-50 rounded p-2">
+                                    <div class="font-medium text-gray-900">Atoms</div>
+                                    <div class="text-gray-600">${numAtoms}</div>
+                                </div>
+                                <div class="bg-gray-50 rounded p-2">
+                                    <div class="font-medium text-gray-900">Bonds</div>
+                                    <div class="text-gray-600">${numBonds}</div>
+                                </div>
+                                <div class="bg-gray-50 rounded p-2">
+                                    <div class="font-medium text-gray-900">Elements</div>
+                                    <div class="text-gray-600">${atomTypes.join(', ')}</div>
+                                </div>
+                                <div class="bg-gray-50 rounded p-2">
+                                    <div class="font-medium text-gray-900">Optimized</div>
+                                    <div class="text-gray-600">${data.optimized ? 'Yes' : 'No'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 3D Dimensions -->
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-900 mb-3 flex items-center">
+                                <i data-lucide="ruler" class="w-5 h-5 mr-2"></i>
+                                3D Dimensions
+                            </h3>
+                            <div class="grid grid-cols-1 gap-2 text-sm">
+                                <div class="bg-gray-50 rounded p-2 flex justify-between">
+                                    <span class="font-medium text-gray-900">X Range:</span>
+                                    <span class="text-gray-600">${xRange.toFixed(2)} Å</span>
+                                </div>
+                                <div class="bg-gray-50 rounded p-2 flex justify-between">
+                                    <span class="font-medium text-gray-900">Y Range:</span>
+                                    <span class="text-gray-600">${yRange.toFixed(2)} Å</span>
+                                </div>
+                                <div class="bg-gray-50 rounded p-2 flex justify-between">
+                                    <span class="font-medium text-gray-900">Z Range:</span>
+                                    <span class="text-gray-600">${zRange.toFixed(2)} Å</span>
+                                </div>
+                                <div class="bg-gray-50 rounded p-2 flex justify-between">
+                                    <span class="font-medium text-gray-900">Volume:</span>
+                                    <span class="text-gray-600">${volume.toFixed(2)} Å³</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Initialize 3Dmol.js viewer after DOM is ready
+    setTimeout(() => {
+        if (typeof $3Dmol !== 'undefined') {
+            // Store data globally for style/color updates
+            window.currentVisualizationData = data;
+            init3DMolViewer(data);
+        } else {
+            console.error('3Dmol.js not loaded');
+            document.getElementById('3d-viewer').innerHTML = `
+                <div class="flex items-center justify-center h-full text-red-500">
+                    <div class="text-center">
+                        <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-2"></i>
+                        <p class="text-sm">3Dmol.js library not loaded</p>
+                    </div>
+                </div>
+            `;
+        }
+    }, 200);
+}
+
+function init3DMolViewer(data) {
+    const element = document.getElementById('3d-viewer');
+    element.innerHTML = '';
+    
+    // Ensure the element has proper dimensions
+    element.style.width = '100%';
+    element.style.position = 'relative';
+    element.style.display = 'block';
+    element.style.margin = '0 auto';
+    
+    // Set height based on whether we're in fullscreen mode
+    if (document.fullscreenElement) {
+        element.style.height = '100%';
+        element.style.minHeight = 'calc(100vh - 120px)';
+    } else {
+        element.style.height = '384px'; // h-96 = 384px
+    }
+    
+    // Wait for element to be properly rendered before creating viewer
+    setTimeout(() => {
+        try {
+            // Create 3Dmol viewer with proper configuration
+            const viewer = $3Dmol.createViewer(element, {
+                defaultcolors: $3Dmol.elementColors.Jmol,
+                backgroundColor: 'black',
+                antialias: true,
+                camerax: 0,
+                cameray: 0,
+                cameraz: 0
+            });
+        
+        // Convert RDKit data to XYZ format
+        let xyzData = `${data.atoms.length}\nGenerated by NuGenRDKit\n`;
+    
+    for (const atom of data.atoms) {
+        xyzData += `${atom.symbol} ${atom.x.toFixed(6)} ${atom.y.toFixed(6)} ${atom.z.toFixed(6)}\n`;
+    }
+    
+    // Add molecule to viewer
+    viewer.addModel(xyzData, 'xyz');
+    
+    // Get current style and color settings from controls
+    const currentStyle = document.getElementById('3d-style')?.value || document.getElementById('render-style')?.value || 'stick';
+    const currentColor = document.getElementById('3d-color')?.value || document.getElementById('color-scheme')?.value || 'default';
+    
+    // Synchronize all controls to match the selected style
+    const mainStyleSelect = document.getElementById('3d-style');
+    const sideStyleSelect = document.getElementById('render-style');
+    const mainColorSelect = document.getElementById('3d-color');
+    const sideColorSelect = document.getElementById('color-scheme');
+    
+    if (mainStyleSelect) mainStyleSelect.value = currentStyle;
+    if (sideStyleSelect) sideStyleSelect.value = currentStyle;
+    if (mainColorSelect) mainColorSelect.value = currentColor;
+    if (sideColorSelect) sideColorSelect.value = currentColor;
+    
+    // Set up colors
+    let colorConfig;
+    switch (currentColor) {
+        case 'carbon':
+            colorConfig = $3Dmol.elementColors.greenCarbon;
+            break;
+        case 'spectrum':
+            colorConfig = $3Dmol.elementColors.rasmol;
+            break;
+        case 'white':
+            colorConfig = {default: 'white'};
+            break;
+        default:
+            colorConfig = $3Dmol.elementColors.Jmol;
+    }
+    
+    // Apply initial style with selected colors
+    let styleConfig = {};
+    if (currentStyle === 'stick') {
+        styleConfig = {stick: {radius: 0.15, colorscheme: colorConfig}};
+    } else if (currentStyle === 'sphere') {
+        styleConfig = {
+            stick: {radius: 0.15, colorscheme: colorConfig},
+            sphere: {radius: 0.3, colorscheme: colorConfig}
+        };
+    } else if (currentStyle === 'line') {
+        styleConfig = {line: {linewidth: 2, colorscheme: colorConfig}};
+    } else {
+        styleConfig = {stick: {radius: 0.15, colorscheme: colorConfig}};
+    }
+    
+    viewer.setStyle({}, styleConfig);
+    
+    // Set background
+    viewer.setBackgroundColor('black');
+    
+    // Center the molecule and zoom appropriately
+    viewer.center();
+    viewer.zoomTo();
+    
+    // Render and store viewer
+    viewer.render();
+    
+    // Store viewer globally for controls
+    window.current3DViewer = viewer;
+    
+        // Add resize handler to maintain proper sizing
+        const resizeObserver = new ResizeObserver(() => {
+            viewer.resize();
+        });
+        resizeObserver.observe(element);
+        
+        } catch (error) {
+            console.error('Error creating 3D viewer:', error);
+        }
+    }, 200);
+}
+
+
+function syncAllStyleDropdowns(style) {
+    // Update all style dropdowns to match the selected style
+    const dropdownIds = [
+        'render-style',
+        '3d-style', 
+        'surface-style',
+        'pharmacophore-style',
+        'scaffold-style',
+        'fs-3d-style',
+        'fs-surface-style',
+        'fs-pharmacophore-style',
+        'fs-scaffold-style'
+    ];
+    
+    dropdownIds.forEach(id => {
+        const dropdown = document.getElementById(id);
+        if (dropdown) {
+            dropdown.value = style;
+        }
+    });
+    
+    // Update the appropriate viewers
+    update3DStyle(style);
+    updateSurfaceStyle();
+    updatePharmacophoreStyle();
+    updateScaffoldStyle();
+}
+
+function update3DStyle(styleValue = null) {
+    if (!window.current3DViewer) return;
+    
+    // Get style from parameter or from select element (check both normal and fullscreen IDs)
+    const style = styleValue || 
+        document.getElementById('3d-style')?.value || 
+        document.getElementById('fs-3d-style')?.value || 
+        'stick';
+    const viewer = window.current3DViewer;
+    
+    // Apply selected style without recreating the model
+    try {
+        if (style === 'stick') {
+            viewer.setStyle({}, {stick: {radius: 0.15}});
+        } else if (style === 'sphere') {
+            viewer.setStyle({}, {stick: {radius: 0.15}, sphere: {radius: 0.3}});
+        } else if (style === 'line') {
+            viewer.setStyle({}, {line: {linewidth: 2}});
+        } else if (style === 'cross') {
+            viewer.setStyle({}, {cross: {radius: 0.1}});
+        } else {
+            // Default to stick for any unknown styles
+            viewer.setStyle({}, {stick: {radius: 0.15}});
+        }
+        
+        viewer.render();
+    } catch (error) {
+        console.error('Error updating 3D style:', error);
+        // Fallback to stick style
+        viewer.setStyle({}, {stick: {radius: 0.15}});
+        viewer.render();
+    }
+}
+
+function update3DColor(colorValue = null) {
+    if (!window.current3DViewer) return;
+    
+    // Get color from parameter or from select element (check both normal and fullscreen IDs)
+    const colorScheme = colorValue || 
+        document.getElementById('3d-color')?.value || 
+        document.getElementById('fs-3d-color')?.value || 
+        'default';
+    const viewer = window.current3DViewer;
+    
+    // Update all color controls to match
+    const mainColorSelect = document.getElementById('3d-color');
+    const sideColorSelect = document.getElementById('color-scheme');
+    const fsColorSelect = document.getElementById('fs-3d-color');
+    if (mainColorSelect) mainColorSelect.value = colorScheme;
+    if (sideColorSelect) sideColorSelect.value = colorScheme;
+    if (fsColorSelect) fsColorSelect.value = colorScheme;
+    
+    try {
+        // Get current style to maintain it
+        const currentStyle = document.getElementById('3d-style')?.value || 'stick';
+        
+        let styleConfig = {};
+        let colorConfig;
+        
+        // Set up colors
+        switch (colorScheme) {
+            case 'carbon':
+                colorConfig = $3Dmol.elementColors.greenCarbon;
+                break;
+            case 'spectrum':
+                colorConfig = $3Dmol.elementColors.rasmol;
+                break;
+            case 'white':
+                colorConfig = {default: 'white'};
+                break;
+            default:
+                colorConfig = $3Dmol.elementColors.Jmol;
+        }
+        
+        // Apply style with new colors
+        if (currentStyle === 'stick') {
+            styleConfig = {stick: {radius: 0.15, colorscheme: colorConfig}};
+        } else if (currentStyle === 'sphere') {
+            styleConfig = {
+                stick: {radius: 0.15, colorscheme: colorConfig},
+                sphere: {radius: 0.3, colorscheme: colorConfig}
+            };
+        } else if (currentStyle === 'line') {
+            styleConfig = {line: {linewidth: 2, colorscheme: colorConfig}};
+        } else {
+            styleConfig = {stick: {radius: 0.15, colorscheme: colorConfig}};
+        }
+        
+        viewer.setStyle({}, styleConfig);
+        viewer.render();
+    } catch (error) {
+        console.error('Error updating 3D color:', error);
+        // Fallback to default colors
+        viewer.setStyle({}, {stick: {radius: 0.15}});
+        viewer.render();
+    }
+}
+
+function reset3DView() {
+    if (window.current3DViewer) {
+        try {
+            window.current3DViewer.center();
+            window.current3DViewer.zoomTo();
+            window.current3DViewer.render();
+            showAlert('3D view reset', 'success');
+        } catch (error) {
+            console.error('Reset 3D view error:', error);
+            showAlert('Failed to reset 3D view', 'danger');
+        }
+    } else {
+        showAlert('No 3D viewer found to reset', 'warning');
+    }
+}
+
+function createSurfaceVisualization(data, smiles, container) {
+    const surfaceArea = data.surface_area || 0;
+    const volume = data.volume || 0;
+    const tpsa = data.tpsa || 0;
+    const logp = data.logp || 0;
+    const atoms = data.atoms || [];
+    
+    container.innerHTML = `
+        <div class="w-full h-full p-6">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Molecular Surface Analysis</h2>
+                    <code class="text-sm bg-gray-100 px-2 py-1 rounded">${smiles}</code>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 3D Surface Visualization -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white border border-gray-200 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-semibold text-gray-900 flex items-center">
+                                    <i data-lucide="layers" class="w-5 h-5 mr-2 text-green-500"></i>
+                                    Interactive 3D Surface View
+                                </h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="resetSurfaceView()" class="text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">
+                                        <i data-lucide="refresh-cw" class="w-3 h-3 inline mr-1"></i>
+                                        Reset
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="surface-3d-viewer" class="w-full h-96 bg-black rounded-lg border border-gray-300 relative overflow-hidden"></div>
+                            <div class="mt-3 text-center">
+                                <div class="text-xs text-gray-500">
+                                    Van der Waals surface • Drag to rotate • Scroll to zoom
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls and Properties -->
+                    <div class="space-y-4">
+                        <!-- 3D Controls -->
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-900 mb-3">3D Controls</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Style</label>
+                                    <select id="surface-style" onchange="syncAllStyleDropdowns(this.value)" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                        <option value="stick">Stick</option>
+                                        <option value="sphere">Ball & Stick</option>
+                                        <option value="line">Wireframe</option>
+                                        <option value="cross">Cross</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Surface</label>
+                                    <select id="surface-type" onchange="updateSurfaceType()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                        <option value="vdw">Van der Waals</option>
+                                        <option value="sas">Solvent Accessible</option>
+                                        <option value="none">Hide Surface</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    
+                    <!-- Surface Properties -->
+                    <div class="space-y-4">
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-900 mb-3">Surface Properties</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                    <span class="text-sm font-medium text-gray-700">Topological PSA</span>
+                                    <span class="text-sm text-gray-900 font-mono">${tpsa.toFixed(1)} Ų</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                    <span class="text-sm font-medium text-gray-700">LogP</span>
+                                    <span class="text-sm text-gray-900 font-mono">${logp.toFixed(2)}</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                    <span class="text-sm font-medium text-gray-700">Surface Type</span>
+                                    <span class="text-sm text-gray-900">${data.surface_type || 'Van der Waals'}</span>
+                                </div>
+                                <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                    <span class="text-sm font-medium text-gray-700">Atoms</span>
+                                    <span class="text-sm text-gray-900">${data.num_atoms}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-start space-x-3">
+                                <i data-lucide="info" class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"></i>
+                                <div class="text-sm text-blue-800">
+                                    <p class="font-medium mb-1">Surface Analysis</p>
+                                    <p>Molecular surface provides insights into molecular size, shape, and potential interaction sites. The calculated surface area and volume help predict solubility and permeability properties.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Initialize 3D surface viewer with 3Dmol.js
+    setTimeout(() => {
+        try {
+            if (typeof $3Dmol !== 'undefined' && atoms.length > 0) {
+                const element = document.getElementById('surface-3d-viewer');
+                if (element) {
+                    // Ensure the element has proper dimensions
+                    element.style.position = 'relative';
+                    element.style.width = '100%';
+                    element.style.height = '400px';
+                    
+                    const viewer = $3Dmol.createViewer(element, {
+                        defaultcolors: $3Dmol.elementColors.Jmol,
+                        backgroundColor: 'black'
+                    });
+                    
+                    // Convert atoms to XYZ format
+                    let xyzData = `${atoms.length}\nMolecular Surface\n`;
+                    for (const atom of atoms) {
+                        xyzData += `${atom.symbol} ${atom.x.toFixed(6)} ${atom.y.toFixed(6)} ${atom.z.toFixed(6)}\n`;
+                    }
+                    
+                    // Add molecule to viewer
+                    viewer.addModel(xyzData, 'xyz');
+                    
+                    // Set ball and stick style
+                    viewer.setStyle({}, {stick: {radius: 0.15}, sphere: {radius: 0.3}});
+                    
+                    // Add Van der Waals surface
+                    viewer.addSurface($3Dmol.SurfaceType.VDW, {
+                        opacity: 0.7,
+                        color: 'lightblue'
+                    });
+                    
+                    viewer.center();
+                    viewer.zoomTo();
+                    viewer.render();
+                    
+                    window.currentSurfaceViewer = viewer;
+                }
+            } else {
+                // Fallback if 3Dmol is not available or no atoms
+                const element = document.getElementById('surface-3d-viewer');
+                if (element) {
+                    element.innerHTML = `
+                        <div class="flex items-center justify-center h-full text-white">
+                            <div class="text-center">
+                                <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-3"></i>
+                                <p class="text-sm">3D surface visualization requires molecular coordinates</p>
+                            </div>
+                        </div>
+                    `;
+                    if (window.lucide) lucide.createIcons();
+                }
+            }
+        } catch (error) {
+            console.error('Error creating surface visualization:', error);
+        }
+    }, 200);
+}
+
+function createPharmacophoreVisualization(data, smiles, container) {
+    const features = data.features || [];
+    const featureTypes = data.feature_types || [];
+    const atoms = data.atoms || [];
+    
+    // Group features by type
+    const groupedFeatures = {};
+    features.forEach(feature => {
+        if (!groupedFeatures[feature.type]) {
+            groupedFeatures[feature.type] = [];
+        }
+        groupedFeatures[feature.type].push(feature);
+    });
+    
+    const featureColors = {
+        'hydrogen_donor': 'bg-blue-100 text-blue-800 border-blue-200',
+        'hydrogen_acceptor': 'bg-red-100 text-red-800 border-red-200',
+        'aromatic_ring': 'bg-purple-100 text-purple-800 border-purple-200',
+        'hydrophobic': 'bg-green-100 text-green-800 border-green-200'
+    };
+    
+    container.innerHTML = `
+        <div class="w-full h-full p-6">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Pharmacophore Analysis</h2>
+                    <code class="text-sm bg-gray-100 px-2 py-1 rounded">${smiles}</code>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 3D Pharmacophore Visualization -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white border border-gray-200 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-semibold text-gray-900 flex items-center">
+                                    <i data-lucide="target" class="w-5 h-5 mr-2 text-purple-500"></i>
+                                    Interactive 3D Pharmacophore View
+                                </h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="resetPharmacophoreView()" class="text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">
+                                        <i data-lucide="refresh-cw" class="w-3 h-3 inline mr-1"></i>
+                                        Reset
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="pharmacophore-3d-viewer" class="w-full h-96 bg-black rounded-lg border border-gray-300 relative overflow-hidden"></div>
+                            <div class="mt-3 text-center">
+                                <div class="text-xs text-gray-500">
+                                    Features: Blue (H-donors), Red (H-acceptors), Purple (aromatic), Green (hydrophobic) • Drag to rotate • Scroll to zoom
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls and Properties -->
+                    <div class="space-y-4">
+                        <!-- 3D Controls -->
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-900 mb-3">3D Controls</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Style</label>
+                                    <select id="pharmacophore-style" onchange="syncAllStyleDropdowns(this.value)" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                        <option value="stick">Stick</option>
+                                        <option value="sphere">Ball & Stick</option>
+                                        <option value="line">Wireframe</option>
+                                        <option value="cross">Cross</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Features</label>
+                                    <select id="pharmacophore-features" onchange="updatePharmacophoreFeatures()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                        <option value="all">Show All</option>
+                                        <option value="donors">H-Donors Only</option>
+                                        <option value="acceptors">H-Acceptors Only</option>
+                                        <option value="aromatic">Aromatic Only</option>
+                                        <option value="hydrophobic">Hydrophobic Only</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    
+                    <!-- Feature Details -->
+                    <div class="space-y-4">
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-900 mb-3">Feature Summary</h3>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div class="bg-gray-50 rounded p-2">
+                                    <div class="font-medium text-gray-900">Total Features</div>
+                                    <div class="text-gray-600">${features.length}</div>
+                                </div>
+                                <div class="bg-gray-50 rounded p-2">
+                                    <div class="font-medium text-gray-900">Feature Types</div>
+                                    <div class="text-gray-600">${featureTypes.length}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto">
+                            <h3 class="font-semibold text-gray-900 mb-3">Feature Details</h3>
+                            <div class="space-y-2 text-sm">
+                                ${features.map((feature, index) => `
+                                    <div class="border border-gray-200 rounded p-2">
+                                        <div class="font-medium text-gray-900">${feature.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                                        <div class="text-gray-600 text-xs">Atoms: ${feature.atoms.join(', ')}</div>
+                                        ${feature.centroid ? `
+                                            <div class="text-gray-500 text-xs">
+                                                Center: (${feature.centroid.x.toFixed(2)}, ${feature.centroid.y.toFixed(2)}, ${feature.centroid.z.toFixed(2)})
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-start space-x-3">
+                                <i data-lucide="lightbulb" class="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0"></i>
+                                <div class="text-sm text-yellow-800">
+                                    <p class="font-medium mb-1">Pharmacophore Insights</p>
+                                    <p>These features represent potential binding sites and interaction points important for biological activity. Use this information for drug design and virtual screening.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Initialize 3D pharmacophore viewer with 3Dmol.js
+    setTimeout(() => {
+        try {
+            if (typeof $3Dmol !== 'undefined' && atoms.length > 0) {
+                const element = document.getElementById('pharmacophore-3d-viewer');
+                if (element) {
+                    // Ensure the element has proper dimensions
+                    element.style.position = 'relative';
+                    element.style.width = '100%';
+                    element.style.height = '400px';
+                    
+                    const viewer = $3Dmol.createViewer(element, {
+                        defaultcolors: $3Dmol.elementColors.Jmol,
+                        backgroundColor: 'black'
+                    });
+                    
+                    // Convert atoms to XYZ format
+                    let xyzData = `${atoms.length}\nPharmacophore Model\n`;
+                    for (const atom of atoms) {
+                        xyzData += `${atom.symbol} ${atom.x.toFixed(6)} ${atom.y.toFixed(6)} ${atom.z.toFixed(6)}\n`;
+                    }
+                    
+                    // Add molecule to viewer
+                    viewer.addModel(xyzData, 'xyz');
+                    
+                    // Set stick style for molecule
+                    viewer.setStyle({}, {stick: {radius: 0.1, opacity: 0.7}});
+                    
+                    // Add pharmacophore features as colored spheres
+                    const featureSphereColors = {
+                        'hydrogen_donor': 'blue',
+                        'hydrogen_acceptor': 'red',
+                        'aromatic_ring': 'purple',
+                        'hydrophobic': 'green'
+                    };
+                    
+                    features.forEach(feature => {
+                        if (feature.position && feature.position.length >= 3) {
+                            viewer.addSphere({
+                                center: {x: feature.position[0], y: feature.position[1], z: feature.position[2]},
+                                radius: 1.0,
+                                color: featureSphereColors[feature.type] || 'orange',
+                                alpha: 0.6
+                            });
+                        }
+                    });
+                    
+                    viewer.center();
+                    viewer.zoomTo();
+                    viewer.render();
+                    
+                    window.currentPharmacophoreViewer = viewer;
+                }
+            } else {
+                // Fallback if 3Dmol is not available
+                const element = document.getElementById('pharmacophore-3d-viewer');
+                if (element) {
+                    element.innerHTML = `
+                        <div class="flex items-center justify-center h-full text-white">
+                            <div class="text-center">
+                                <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-3"></i>
+                                <p class="text-sm">3D pharmacophore visualization requires molecular coordinates</p>
+                            </div>
+                        </div>
+                    `;
+                    if (window.lucide) lucide.createIcons();
+                }
+            }
+        } catch (error) {
+            console.error('Error creating pharmacophore visualization:', error);
+        }
+    }, 200);
+}
+
+function createScaffoldVisualization(data, smiles, container) {
+    const scaffoldSmiles = data.scaffold_smiles;
+    const genericScaffold = data.generic_scaffold_smiles;
+    const ringSystems = data.ring_systems || [];
+    const sideChainAtoms = data.side_chain_atoms || [];
+    const complexity = data.scaffold_complexity || 0;
+    const atoms = data.atoms || [];
+    
+    container.innerHTML = `
+        <div class="w-full h-full p-6">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Scaffold Analysis</h2>
+                    <code class="text-sm bg-gray-100 px-2 py-1 rounded">${smiles}</code>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 3D Scaffold Visualization -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white border border-gray-200 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-semibold text-gray-900 flex items-center">
+                                    <i data-lucide="git-branch" class="w-5 h-5 mr-2 text-orange-500"></i>
+                                    Interactive 3D Scaffold View
+                                </h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="resetScaffoldView()" class="text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">
+                                        <i data-lucide="refresh-cw" class="w-3 h-3 inline mr-1"></i>
+                                        Reset
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="scaffold-3d-viewer" class="w-full h-96 bg-black rounded-lg border border-gray-300 relative overflow-hidden"></div>
+                            <div class="mt-3 text-center">
+                                <div class="text-xs text-gray-500">
+                                    Scaffold (orange) • Side chains (gray) • Drag to rotate • Scroll to zoom
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls and Properties -->
+                    <div class="space-y-4">
+                        <!-- 3D Controls -->
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-900 mb-3">3D Controls</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Style</label>
+                                    <select id="scaffold-style" onchange="syncAllStyleDropdowns(this.value)" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                        <option value="stick">Stick</option>
+                                        <option value="sphere">Ball & Stick</option>
+                                        <option value="line">Wireframe</option>
+                                        <option value="cross">Cross</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Color Scheme</label>
+                                    <select id="scaffold-color" onchange="updateScaffoldColor()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                        <option value="scaffold">Scaffold Colors</option>
+                                        <option value="default">By Element</option>
+                                        <option value="spectrum">Spectrum</option>
+                                        <option value="white">White</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            ${scaffoldSmiles ? `
+                                <div class="bg-orange-100 border border-orange-200 rounded-lg p-3">
+                                    <div class="font-medium text-sm text-orange-900 mb-1">Murcko Scaffold</div>
+                                    <code class="text-xs bg-white px-2 py-1 rounded text-orange-800">${scaffoldSmiles}</code>
+                                </div>
+                            ` : ''}
+                            ${genericScaffold ? `
+                                <div class="bg-orange-100 border border-orange-200 rounded-lg p-3">
+                                    <div class="font-medium text-sm text-orange-900 mb-1">Generic Scaffold</div>
+                                    <code class="text-xs bg-white px-2 py-1 rounded text-orange-800">${genericScaffold}</code>
+                                </div>
+                            ` : ''}
+                            <div class="bg-orange-100 border border-orange-200 rounded-lg p-3">
+                                <div class="font-medium text-sm text-orange-900 mb-1">Complexity Score</div>
+                                <div class="text-orange-800">${complexity.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Structural Components -->
+                    <div class="space-y-4">
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-900 mb-3">Ring Systems</h3>
+                            <div class="space-y-2 max-h-32 overflow-y-auto">
+                                ${ringSystems.length > 0 ? ringSystems.map((ring, index) => `
+                                    <div class="border border-gray-200 rounded p-2 text-sm">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-medium">Ring ${index + 1}</span>
+                                            <span class="text-xs ${ring.is_aromatic ? 'text-purple-600 bg-purple-100' : 'text-gray-600 bg-gray-100'} px-2 py-1 rounded">
+                                                ${ring.is_aromatic ? 'Aromatic' : 'Aliphatic'}
+                                            </span>
+                                        </div>
+                                        <div class="text-gray-600 text-xs mt-1">
+                                            Size: ${ring.size}, Atoms: ${ring.atoms.join(', ')}
+                                        </div>
+                                    </div>
+                                `).join('') : `
+                                    <div class="text-center text-gray-500 text-sm py-4">No rings detected</div>
+                                `}
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-gray-900 mb-3">Side Chains</h3>
+                            <div class="text-sm">
+                                ${sideChainAtoms.length > 0 ? `
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div class="bg-gray-50 rounded p-2">
+                                            <div class="font-medium text-gray-900">Atoms</div>
+                                            <div class="text-gray-600">${sideChainAtoms.length}</div>
+                                        </div>
+                                        <div class="bg-gray-50 rounded p-2">
+                                            <div class="font-medium text-gray-900">Elements</div>
+                                            <div class="text-gray-600">${[...new Set(sideChainAtoms.map(a => a.symbol))].join(', ')}</div>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="text-center text-gray-500 py-4">No side chains detected</div>
+                                `}
+                            </div>
+                        </div>
+                        
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-start space-x-3">
+                                <i data-lucide="search" class="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0"></i>
+                                <div class="text-sm text-green-800">
+                                    <p class="font-medium mb-1">Scaffold Applications</p>
+                                    <p>Use scaffolds for similarity searching, compound classification, and identifying core structures for drug discovery and chemical space analysis.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Initialize 3D scaffold viewer with 3Dmol.js
+    setTimeout(() => {
+        try {
+            if (typeof $3Dmol !== 'undefined' && atoms.length > 0) {
+                const element = document.getElementById('scaffold-3d-viewer');
+                if (element) {
+                    // Ensure the element has proper dimensions
+                    element.style.position = 'relative';
+                    element.style.width = '100%';
+                    element.style.height = '400px';
+                    
+                    const viewer = $3Dmol.createViewer(element, {
+                        defaultcolors: $3Dmol.elementColors.Jmol,
+                        backgroundColor: 'black'
+                    });
+                    
+                    // Convert atoms to XYZ format
+                    let xyzData = `${atoms.length}\nScaffold Analysis\n`;
+                    for (const atom of atoms) {
+                        xyzData += `${atom.symbol} ${atom.x.toFixed(6)} ${atom.y.toFixed(6)} ${atom.z.toFixed(6)}\n`;
+                    }
+                    
+                    // Add molecule to viewer
+                    viewer.addModel(xyzData, 'xyz');
+                    
+                    // Color scaffold atoms differently from side chain atoms
+                    if (sideChainAtoms.length > 0) {
+                        // Create selection for side chain atoms
+                        const sideChainIndices = sideChainAtoms.map(atom => atom.index);
+                        
+                        // Style scaffold atoms (not in side chain list) in orange
+                        viewer.setStyle({not: {index: sideChainIndices}}, {
+                            stick: {radius: 0.2, color: 'orange'}, 
+                            sphere: {radius: 0.4, color: 'orange'}
+                        });
+                        
+                        // Style side chain atoms in gray
+                        viewer.setStyle({index: sideChainIndices}, {
+                            stick: {radius: 0.15, color: 'gray'}, 
+                            sphere: {radius: 0.3, color: 'gray'}
+                        });
+                    } else {
+                        // No side chains, show all atoms in scaffold color
+                        viewer.setStyle({}, {
+                            stick: {radius: 0.15, color: 'orange'}, 
+                            sphere: {radius: 0.3, color: 'orange'}
+                        });
+                    }
+                    
+                    viewer.center();
+                    viewer.zoomTo();
+                    viewer.render();
+                    
+                    window.currentScaffoldViewer = viewer;
+                    window.currentScaffoldData = data;
+                }
+            } else {
+                // Fallback if 3Dmol is not available
+                const element = document.getElementById('scaffold-3d-viewer');
+                if (element) {
+                    element.innerHTML = `
+                        <div class="flex items-center justify-center h-full text-white">
+                            <div class="text-center">
+                                <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-3"></i>
+                                <p class="text-sm">3D scaffold visualization requires molecular coordinates</p>
+                            </div>
+                        </div>
+                    `;
+                    if (window.lucide) lucide.createIcons();
+                }
+            }
+        } catch (error) {
+            console.error('Error creating scaffold visualization:', error);
+        }
+    }, 200);
+}
+
+async function loadMolecularInfo(smiles) {
+    const infoDiv = document.getElementById('molecular-info');
+    
+    try {
+        // Get basic properties
+        const response = await fetch('/api/v1/properties/physicochemical', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ smiles })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const props = data.properties;
+            infoDiv.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-sm text-gray-600 mb-1">Molecular Formula</div>
+                        <div class="text-lg font-semibold text-gray-900">${props.molecular_formula || 'N/A'}</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-sm text-gray-600 mb-1">Molecular Weight</div>
+                        <div class="text-lg font-semibold text-gray-900">${props.molecular_weight ? props.molecular_weight.toFixed(2) + ' Da' : 'N/A'}</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-sm text-gray-600 mb-1">Heavy Atoms</div>
+                        <div class="text-lg font-semibold text-gray-900">${props.heavy_atom_count || 'N/A'}</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-sm text-gray-600 mb-1">Rings</div>
+                        <div class="text-lg font-semibold text-gray-900">${props.num_rings || 'N/A'}</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-sm text-gray-600 mb-1">LogP</div>
+                        <div class="text-lg font-semibold text-gray-900">${props.logp ? props.logp.toFixed(2) : 'N/A'}</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-sm text-gray-600 mb-1">TPSA</div>
+                        <div class="text-lg font-semibold text-gray-900">${props.tpsa ? props.tpsa.toFixed(1) + ' Ų' : 'N/A'}</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-sm text-gray-600 mb-1">H-Bond Donors</div>
+                        <div class="text-lg font-semibold text-gray-900">${props.num_h_donors || 'N/A'}</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="text-sm text-gray-600 mb-1">H-Bond Acceptors</div>
+                        <div class="text-lg font-semibold text-gray-900">${props.num_h_acceptors || 'N/A'}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            infoDiv.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-2"></i>
+                    <p class="text-sm">Could not load molecular information</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.warn('Failed to load molecular info:', error);
+        infoDiv.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i data-lucide="wifi-off" class="w-12 h-12 mx-auto mb-2"></i>
+                <p class="text-sm">Network error loading information</p>
+            </div>
+        `;
+    }
+}
+
+function addToGallery(data, smiles, vizType) {
+    const gallery = document.getElementById('visualization-gallery');
+    const timestamp = new Date().toLocaleTimeString();
+    
+    // Clear placeholder if it exists
+    if (gallery.querySelector('.col-span-full')) {
+        gallery.innerHTML = '';
+    }
+    
+    // Remove existing thumbnails of the same type and SMILES to prevent duplicates
+    const existingItems = gallery.querySelectorAll('.gallery-item');
+    existingItems.forEach(item => {
+        const itemSmiles = item.dataset.smiles;
+        const itemType = item.dataset.vizType;
+        if (itemSmiles === smiles && itemType === vizType) {
+            item.remove();
+        }
+    });
+    
+    // Create gallery item
+    const galleryItem = document.createElement('div');
+    galleryItem.className = 'gallery-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer';
+    galleryItem.dataset.smiles = smiles;
+    galleryItem.dataset.vizType = vizType;
+    galleryItem.onclick = () => restoreVisualization(data, smiles, vizType);
+    
+    // Generate thumbnail based on visualization type
+    if (vizType === '2d' && data.svg) {
+        // 2D SVG visualization - scale it down for thumbnail
+        const scaledSvg = data.svg.replace(/width="[\d.]*"/, 'width="120"').replace(/height="[\d.]*"/, 'height="120"');
+        galleryItem.innerHTML = `
+            <div class="aspect-square mb-2 flex items-center justify-center bg-white rounded border overflow-hidden">
+                ${scaledSvg}
+            </div>
+            <div class="text-xs text-gray-600 truncate font-medium">${vizType.toUpperCase()}</div>
+            <div class="text-xs text-gray-500 truncate">${smiles}</div>
+            <div class="text-xs text-gray-400">${timestamp}</div>
+        `;
+    } else if (data.image && (vizType === 'similarity_map' || vizType === 'fingerprint_bit' || vizType === 'fingerprint_env' || vizType === 'matrix_grid')) {
+        // Image-based visualizations - display the image directly
+        galleryItem.innerHTML = `
+            <div class="aspect-square mb-2 flex items-center justify-center bg-white rounded border overflow-hidden">
+                <img src="${data.image}" alt="${vizType}" class="max-w-full max-h-full object-contain">
+            </div>
+            <div class="text-xs text-gray-600 truncate font-medium">${vizType.toUpperCase().replace(/_/g, ' ')}</div>
+            <div class="text-xs text-gray-500 truncate">${smiles}</div>
+            <div class="text-xs text-gray-400">${timestamp}</div>
+        `;
+    } else {
+        // For 3D and other complex visualizations, generate a 2D thumbnail via API
+        generateThumbnail(smiles, vizType, data, galleryItem, timestamp);
+    }
+    
+    gallery.insertBefore(galleryItem, gallery.firstChild);
+    
+    // Limit gallery to 12 items
+    const items = gallery.children;
+    if (items.length > 12) {
+        gallery.removeChild(items[items.length - 1]);
+    }
+    
+    // Re-initialize icons
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
+async function generateThumbnail(smiles, vizType, data, galleryItem, timestamp) {
+    // Start with a placeholder
+    galleryItem.innerHTML = `
+        <div class="aspect-square mb-2 flex items-center justify-center bg-white rounded border">
+            <div class="text-center">
+                <div class="animate-pulse">
+                    <i data-lucide="${
+                        vizType === '3d' ? 'box' :
+                        vizType === 'surface' ? 'layers' :
+                        vizType === 'pharmacophore' ? 'target' :
+                        'git-branch'
+                    }" class="w-8 h-8 text-gray-400 mb-1"></i>
+                    <div class="text-xs text-gray-400">Loading...</div>
+                </div>
+            </div>
+        </div>
+        <div class="text-xs text-gray-600 truncate font-medium">${vizType.toUpperCase()}</div>
+        <div class="text-xs text-gray-500 truncate">${smiles}</div>
+        <div class="text-xs text-gray-400">${timestamp}</div>
+    `;
+    
+    // Re-initialize icons for the placeholder
+    if (window.lucide) lucide.createIcons();
+    
+    // Generate the actual thumbnail based on visualization type
+    const thumbnailId = `thumbnail-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    if (vizType === '3d') {
+        create3DThumbnail(data, galleryItem, thumbnailId, smiles, timestamp);
+    } else if (vizType === 'surface') {
+        createSurfaceThumbnail(data, galleryItem, thumbnailId, smiles, timestamp);
+    } else if (vizType === 'pharmacophore') {
+        createPharmacophoreThumbnail(data, galleryItem, thumbnailId, smiles, timestamp);
+    } else if (vizType === 'scaffold') {
+        createScaffoldThumbnail(data, galleryItem, thumbnailId, smiles, timestamp);
+    } else {
+        // Fallback for unknown types
+        createFallbackThumbnail(galleryItem, vizType, data, smiles, timestamp);
+    }
+}
+
+function createFallbackThumbnail(galleryItem, vizType, data, smiles, timestamp) {
+    const iconColor = {
+        '3d': 'text-blue-500',
+        'surface': 'text-green-500',
+        'pharmacophore': 'text-purple-500',
+        'scaffold': 'text-orange-500',
+        'similarity_map': 'text-red-500',
+        'fingerprint_bit': 'text-indigo-500',
+        'fingerprint_env': 'text-cyan-500',
+        'matrix_grid': 'text-pink-500'
+    }[vizType] || 'text-gray-500';
+
+    const icon = {
+        '3d': 'box',
+        'surface': 'layers',
+        'pharmacophore': 'target',
+        'scaffold': 'git-branch',
+        'similarity_map': 'map',
+        'fingerprint_bit': 'fingerprint',
+        'fingerprint_env': 'scan',
+        'matrix_grid': 'grid-3x3'
+    }[vizType] || 'image';
+
+    const info = {
+        '3d': `${data.atoms?.length || 0} atoms`,
+        'surface': `${data.surface_area?.toFixed(1) || 'N/A'} Ų`,
+        'pharmacophore': `${data.features?.length || 0} features`,
+        'scaffold': `${data.ring_systems?.length || 0} rings`,
+        'similarity_map': data.fp_type || 'Morgan',
+        'fingerprint_bit': `Bit ${data.bit_id || 0}`,
+        'fingerprint_env': `Atom ${data.atom_id || 0}`,
+        'matrix_grid': `${data.num_rows || 0}x${data.num_cols || 0}`
+    }[vizType] || '';
+    
+    galleryItem.innerHTML = `
+        <div class="aspect-square mb-2 flex flex-col items-center justify-center bg-white rounded border">
+            <i data-lucide="${icon}" class="w-8 h-8 ${iconColor} mb-2"></i>
+            <div class="text-xs font-medium text-gray-700">${vizType.toUpperCase()}</div>
+            <div class="text-xs text-gray-500">${info}</div>
+        </div>
+        <div class="text-xs text-gray-600 truncate font-medium">${vizType.toUpperCase()}</div>
+        <div class="text-xs text-gray-500 truncate">${smiles}</div>
+        <div class="text-xs text-gray-400">${timestamp}</div>
+    `;
+    
+    // Re-initialize icons
+    if (window.lucide) lucide.createIcons();
+}
+
+function create3DThumbnail(data, galleryItem, thumbnailId, smiles, timestamp) {
+    galleryItem.innerHTML = `
+        <div class="aspect-square mb-2 relative bg-black rounded border">
+            <div id="${thumbnailId}" class="w-full h-full"></div>
+            <div class="absolute bottom-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded text-[10px]">
+                3D
+            </div>
+        </div>
+        <div class="text-xs text-gray-600 truncate font-medium">3D MODEL</div>
+        <div class="text-xs text-gray-500 truncate">${smiles}</div>
+        <div class="text-xs text-gray-400">${timestamp}</div>
+    `;
+    
+    // Initialize mini 3D viewer
+    setTimeout(() => {
+        try {
+            const element = document.getElementById(thumbnailId);
+            if (element && typeof $3Dmol !== 'undefined') {
+                const miniViewer = $3Dmol.createViewer(element, {
+                    defaultcolors: $3Dmol.elementColors.Jmol,
+                    backgroundColor: 'black'
+                });
+                
+                // Convert data to XYZ format
+                let xyzData = `${data.atoms.length}\nThumbnail\n`;
+                for (const atom of data.atoms) {
+                    xyzData += `${atom.symbol} ${atom.x.toFixed(6)} ${atom.y.toFixed(6)} ${atom.z.toFixed(6)}\n`;
+                }
+                
+                miniViewer.addModel(xyzData, 'xyz');
+                miniViewer.setStyle({}, {stick: {radius: 0.1}, sphere: {radius: 0.2}});
+                miniViewer.center();
+                miniViewer.zoomTo();
+                miniViewer.render();
+            }
+        } catch (error) {
+            console.error('Error creating 3D thumbnail:', error);
+        }
+    }, 200);
+}
+
+function createSurfaceThumbnail(data, galleryItem, thumbnailId, smiles, timestamp) {
+    const atoms = data.atoms || [];
+    let visualization = '';
+    
+    if (atoms.length > 0) {
+        // Create a simple surface representation using SVG circles for atoms
+        const maxCoord = Math.max(...atoms.flatMap(a => [Math.abs(a.x), Math.abs(a.y)]));
+        const scale = maxCoord > 0 ? 50 / maxCoord : 1;
+        
+        visualization = `
+            <svg width="120" height="120" viewBox="0 0 120 120" class="w-full h-full">
+                <defs>
+                    <radialGradient id="surface-gradient" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="rgba(34, 197, 94, 0.8)"/>
+                        <stop offset="100%" stop-color="rgba(34, 197, 94, 0.2)"/>
+                    </radialGradient>
+                </defs>
+                ${atoms.map(atom => {
+                    const x = 60 + (atom.x * scale);
+                    const y = 60 - (atom.y * scale); // Flip Y axis
+                    const vdwRadius = atom.vdw_radius || 1.5;
+                    const radius = Math.max(vdwRadius * scale * 0.8, 3);
+                    return `<circle cx="${x}" cy="${y}" r="${radius}" fill="url(#surface-gradient)" opacity="0.7"/>`;
+                }).join('')}
+            </svg>
+        `;
+    } else {
+        visualization = `
+            <div class="flex items-center justify-center h-full">
+                <i data-lucide="layers" class="w-8 h-8 text-green-500"></i>
+            </div>
+        `;
+    }
+    
+    galleryItem.innerHTML = `
+        <div class="aspect-square mb-2 relative bg-gray-900 rounded border overflow-hidden">
+            ${visualization}
+            <div class="absolute bottom-1 right-1 bg-green-500 text-white text-xs px-1 py-0.5 rounded text-[10px]">
+                SURF
+            </div>
+        </div>
+        <div class="text-xs text-gray-600 truncate font-medium">SURFACE</div>
+        <div class="text-xs text-gray-500 truncate">${smiles}</div>
+        <div class="text-xs text-gray-400">${timestamp}</div>
+    `;
+    
+    if (window.lucide) lucide.createIcons();
+}
+
+function createPharmacophoreThumbnail(data, galleryItem, thumbnailId, smiles, timestamp) {
+    const features = data.features || [];
+    let visualization = '';
+    
+    if (features.length > 0 && features[0].coordinates) {
+        // Create a pharmacophore representation showing features
+        const allCoords = features.flatMap(f => f.coordinates || []);
+        if (allCoords.length > 0) {
+            const maxCoord = Math.max(...allCoords.flatMap(c => [Math.abs(c.x), Math.abs(c.y)]));
+            const scale = maxCoord > 0 ? 40 / maxCoord : 1;
+            
+            const featureColors = {
+                'hydrogen_donor': '#3b82f6',
+                'hydrogen_acceptor': '#ef4444',
+                'aromatic_ring': '#8b5cf6',
+                'hydrophobic': '#f59e0b'
+            };
+            
+            visualization = `
+                <svg width="120" height="120" viewBox="0 0 120 120" class="w-full h-full">
+                    <defs>
+                        ${Object.entries(featureColors).map(([type, color]) => `
+                            <radialGradient id="grad-${type}" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="${color}" opacity="0.8"/>
+                                <stop offset="100%" stop-color="${color}" opacity="0.3"/>
+                            </radialGradient>
+                        `).join('')}
+                    </defs>
+                    ${features.map((feature, i) => {
+                        if (feature.centroid) {
+                            const x = 60 + (feature.centroid.x * scale);
+                            const y = 60 - (feature.centroid.y * scale);
+                            const color = featureColors[feature.type] || '#6b7280';
+                            return `<circle cx="${x}" cy="${y}" r="8" fill="url(#grad-${feature.type})" stroke="${color}" stroke-width="1"/>`;
+                        }
+                        return '';
+                    }).filter(Boolean).join('')}
+                </svg>
+            `;
+        }
+    }
+    
+    if (!visualization) {
+        visualization = `
+            <div class="flex items-center justify-center h-full">
+                <i data-lucide="target" class="w-8 h-8 text-purple-500"></i>
+            </div>
+        `;
+    }
+    
+    galleryItem.innerHTML = `
+        <div class="aspect-square mb-2 relative bg-gray-900 rounded border overflow-hidden">
+            ${visualization}
+            <div class="absolute bottom-1 right-1 bg-purple-500 text-white text-xs px-1 py-0.5 rounded text-[10px]">
+                PHARM
+            </div>
+        </div>
+        <div class="text-xs text-gray-600 truncate font-medium">PHARMACOPHORE</div>
+        <div class="text-xs text-gray-500 truncate">${smiles}</div>
+        <div class="text-xs text-gray-400">${timestamp}</div>
+    `;
+    
+    if (window.lucide) lucide.createIcons();
+}
+
+function createScaffoldThumbnail(data, galleryItem, thumbnailId, smiles, timestamp) {
+    let visualization = '';
+    
+    // Try to get the scaffold SMILES for visualization
+    if (data.scaffold_smiles) {
+        // Generate a mini 2D structure for the scaffold
+        fetch('/api/v1/visualization/draw_svg', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                smiles: data.scaffold_smiles,
+                width: 120,
+                height: 120
+            })
+        })
+        .then(response => response.json())
+        .then(scaffoldData => {
+            if (scaffoldData.success && scaffoldData.svg) {
+                galleryItem.innerHTML = `
+                    <div class="aspect-square mb-2 relative bg-white rounded border overflow-hidden">
+                        <div class="w-full h-full flex items-center justify-center">
+                            ${scaffoldData.svg}
+                        </div>
+                        <div class="absolute bottom-1 right-1 bg-orange-500 text-white text-xs px-1 py-0.5 rounded text-[10px]">
+                            SCAF
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-600 truncate font-medium">SCAFFOLD</div>
+                    <div class="text-xs text-gray-500 truncate">${smiles}</div>
+                    <div class="text-xs text-gray-400">${timestamp}</div>
+                `;
+            } else {
+                createScaffoldFallback();
+            }
+        })
+        .catch(error => {
+            console.error('Error generating scaffold thumbnail:', error);
+            createScaffoldFallback();
+        });
+    } else {
+        createScaffoldFallback();
+    }
+    
+    function createScaffoldFallback() {
+        galleryItem.innerHTML = `
+            <div class="aspect-square mb-2 relative bg-gray-100 rounded border flex items-center justify-center">
+                <i data-lucide="git-branch" class="w-8 h-8 text-orange-500"></i>
+                <div class="absolute bottom-1 right-1 bg-orange-500 text-white text-xs px-1 py-0.5 rounded text-[10px]">
+                    SCAF
+                </div>
+            </div>
+            <div class="text-xs text-gray-600 truncate font-medium">SCAFFOLD</div>
+            <div class="text-xs text-gray-500 truncate">${smiles}</div>
+            <div class="text-xs text-gray-400">${timestamp}</div>
+        `;
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+function restoreVisualization(data, smiles, vizType) {
+    document.getElementById('viz-input').value = smiles;
+    document.getElementById('viz-type').value = vizType;
+    updateVisualizationOptions();
+    displayVisualization(data, smiles, vizType);
+    window.currentVisualizationData = data;
+}
+
+// Reset functions for 3D viewers
+function resetSurfaceView() {
+    if (window.currentSurfaceViewer) {
+        try {
+            window.currentSurfaceViewer.center();
+            window.currentSurfaceViewer.zoomTo();
+            window.currentSurfaceViewer.render();
+            showAlert('Surface view reset', 'success');
+        } catch (error) {
+            console.error('Reset surface view error:', error);
+            showAlert('Failed to reset surface view', 'danger');
+        }
+    } else {
+        showAlert('No surface viewer found to reset', 'warning');
+    }
+}
+
+function resetPharmacophoreView() {
+    if (window.currentPharmacophoreViewer) {
+        try {
+            window.currentPharmacophoreViewer.center();
+            window.currentPharmacophoreViewer.zoomTo();
+            window.currentPharmacophoreViewer.render();
+            showAlert('Pharmacophore view reset', 'success');
+        } catch (error) {
+            console.error('Reset pharmacophore view error:', error);
+            showAlert('Failed to reset pharmacophore view', 'danger');
+        }
+    } else {
+        showAlert('No pharmacophore viewer found to reset', 'warning');
+    }
+}
+
+function resetScaffoldView() {
+    if (window.currentScaffoldViewer) {
+        try {
+            window.currentScaffoldViewer.center();
+            window.currentScaffoldViewer.zoomTo();
+            window.currentScaffoldViewer.render();
+            showAlert('Scaffold view reset', 'success');
+        } catch (error) {
+            console.error('Reset scaffold view error:', error);
+            showAlert('Failed to reset scaffold view', 'danger');
+        }
+    } else {
+        showAlert('No scaffold viewer found to reset', 'warning');
+    }
+}
+
+// Control functions for molecular surface viewer
+function updateSurfaceStyle() {
+    if (!window.currentSurfaceViewer) return;
+    
+    const style = document.getElementById('surface-style')?.value || 
+                  document.getElementById('fs-surface-style')?.value || 'stick';
+    let styleConfig = {};
+    
+    if (style === 'stick') {
+        styleConfig = {stick: {radius: 0.15}};
+    } else if (style === 'sphere') {
+        styleConfig = {stick: {radius: 0.15}, sphere: {radius: 0.3}};
+    } else if (style === 'line') {
+        styleConfig = {line: {linewidth: 2}};
+    } else if (style === 'cross') {
+        styleConfig = {cross: {radius: 0.1}};
+    }
+    
+    window.currentSurfaceViewer.setStyle({}, styleConfig);
+    window.currentSurfaceViewer.render();
+}
+
+function updateSurfaceType() {
+    if (!window.currentSurfaceViewer) return;
+    
+    const surfaceType = document.getElementById('surface-type')?.value || 
+                       document.getElementById('fs-surface-type')?.value || 'vdw';
+    
+    // Remove existing surfaces
+    window.currentSurfaceViewer.removeAllSurfaces();
+    
+    if (surfaceType !== 'none') {
+        const surfaceTypeEnum = surfaceType === 'vdw' ? $3Dmol.SurfaceType.VDW : $3Dmol.SurfaceType.SAS;
+        window.currentSurfaceViewer.addSurface(surfaceTypeEnum, {
+            opacity: 0.7,
+            color: 'lightblue'
+        });
+    }
+    
+    window.currentSurfaceViewer.render();
+}
+
+// Control functions for pharmacophore viewer
+function updatePharmacophoreStyle() {
+    if (!window.currentPharmacophoreViewer) return;
+    
+    const style = document.getElementById('pharmacophore-style')?.value ||
+                  document.getElementById('fs-pharmacophore-style')?.value || 'stick';
+    let styleConfig = {};
+    
+    if (style === 'stick') {
+        styleConfig = {stick: {radius: 0.1, opacity: 0.7}};
+    } else if (style === 'sphere') {
+        styleConfig = {stick: {radius: 0.1}, sphere: {radius: 0.2, opacity: 0.7}};
+    } else if (style === 'line') {
+        styleConfig = {line: {linewidth: 2, opacity: 0.7}};
+    } else if (style === 'cross') {
+        styleConfig = {cross: {radius: 0.05, opacity: 0.7}};
+    }
+    
+    window.currentPharmacophoreViewer.setStyle({}, styleConfig);
+    window.currentPharmacophoreViewer.render();
+}
+
+function updatePharmacophoreFeatures() {
+    // This would filter which pharmacophore features to show
+    // Implementation would depend on storing feature data globally
+    if (window.currentPharmacophoreViewer) {
+        const features = document.getElementById('pharmacophore-features')?.value ||
+                        document.getElementById('fs-pharmacophore-features')?.value || 'all';
+        // Feature filtering logic would go here based on the selected features
+        window.currentPharmacophoreViewer.render();
+    }
+}
+
+// Control functions for scaffold viewer
+function updateScaffoldStyle() {
+    if (!window.currentScaffoldViewer) return;
+    
+    const style = document.getElementById('scaffold-style')?.value ||
+                  document.getElementById('fs-scaffold-style')?.value || 'stick';
+    let styleConfig = {};
+    
+    if (style === 'stick') {
+        styleConfig = {stick: {radius: 0.15}};
+    } else if (style === 'sphere') {
+        styleConfig = {stick: {radius: 0.15}, sphere: {radius: 0.3}};
+    } else if (style === 'line') {
+        styleConfig = {line: {linewidth: 2}};
+    } else if (style === 'cross') {
+        styleConfig = {cross: {radius: 0.1}};
+    }
+    
+    // Apply styles while maintaining scaffold/side chain coloring
+    const colorScheme = document.getElementById('scaffold-color')?.value ||
+                        document.getElementById('scaffold-color-fs')?.value || 'scaffold';
+    applyScaffoldColoring(styleConfig, colorScheme);
+}
+
+function updateScaffoldColor() {
+    if (!window.currentScaffoldViewer) return;
+    
+    const style = document.getElementById('scaffold-style')?.value ||
+                  document.getElementById('fs-scaffold-style')?.value || 'stick';
+    const colorScheme = document.getElementById('scaffold-color')?.value ||
+                        document.getElementById('fs-scaffold-color')?.value || 'scaffold';
+    
+    let styleConfig = {};
+    if (style === 'stick') {
+        styleConfig = {stick: {radius: 0.15}};
+    } else if (style === 'sphere') {
+        styleConfig = {stick: {radius: 0.15}, sphere: {radius: 0.3}};
+    } else if (style === 'line') {
+        styleConfig = {line: {linewidth: 2}};
+    }
+    
+    applyScaffoldColoring(styleConfig, colorScheme);
+}
+
+function applyScaffoldColoring(styleConfig, colorScheme) {
+    if (!window.currentScaffoldViewer || !window.currentScaffoldData) return;
+    
+    const sideChainAtoms = window.currentScaffoldData.side_chain_atoms || [];
+    const sideChainIndices = sideChainAtoms.map(atom => atom.index);
+    
+    if (colorScheme === 'scaffold') {
+        // Apply scaffold coloring
+        Object.keys(styleConfig).forEach(key => {
+            // Scaffold atoms in orange
+            window.currentScaffoldViewer.setStyle({not: {index: sideChainIndices}}, {
+                ...styleConfig, 
+                [key]: {...styleConfig[key], color: 'orange'}
+            });
+            // Side chain atoms in gray  
+            window.currentScaffoldViewer.setStyle({index: sideChainIndices}, {
+                ...styleConfig,
+                [key]: {...styleConfig[key], color: 'gray'}
+            });
+        });
+    } else {
+        // Use standard element colors
+        window.currentScaffoldViewer.setStyle({}, styleConfig);
+    }
+    
+    window.currentScaffoldViewer.render();
+}
+
+function clearGallery() {
+    const gallery = document.getElementById('visualization-gallery');
+    gallery.innerHTML = `
+        <div class="flex items-center justify-center h-32 text-gray-500 col-span-full">
+            <div class="text-center">
+                <i data-lucide="grid" class="w-12 h-12 mx-auto mb-2 text-gray-300"></i>
+                <p class="text-sm">Generated visualizations will appear here</p>
+            </div>
+        </div>
+    `;
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
+function enableExportButtons() {
+    document.getElementById('export-png-btn').disabled = false;
+    document.getElementById('export-svg-btn').disabled = false;
+    document.getElementById('export-pdf-btn').disabled = false;
+}
+
+function resetVisualization() {
+    document.getElementById('main-visualization').innerHTML = `
+        <div class="text-center text-red-500">
+            <i data-lucide="alert-circle" class="w-16 h-16 mx-auto mb-4"></i>
+            <p class="text-lg font-medium">Generation Failed</p>
+            <p class="text-sm">Please try again with different parameters</p>
+        </div>
+    `;
+    
+    // Re-initialize icons
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
+function exportVisualization(format) {
+    const vizType = document.getElementById('viz-type').value;
+    const smiles = document.getElementById('viz-input').value;
+    
+    if (!smiles) {
+        showAlert('No molecule to export', 'warning');
+        return;
+    }
+    
+    if (vizType === '3d' && window.current3DViewer) {
+        // Export 3D visualization using 3Dmol.js export
+        if (format === 'png') {
+            const png = window.current3DViewer.pngURI();
+            const a = document.createElement('a');
+            a.href = png;
+            a.download = `molecule_3d_${smiles.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showAlert('Exported as PNG', 'success');
+        } else if (format === 'svg') {
+            showAlert('SVG export not available for 3D visualizations', 'warning');
+        } else if (format === 'pdf') {
+            showAlert('PDF export not yet implemented', 'info');
+        }
+    } else if ((vizType === 'surface' && window.currentSurfaceViewer) || 
+               (vizType === 'pharmacophore' && window.currentPharmacophoreViewer) || 
+               (vizType === 'scaffold' && window.currentScaffoldViewer)) {
+        // Export 3D molecular visualizations
+        let viewer = null;
+        if (vizType === 'surface') viewer = window.currentSurfaceViewer;
+        else if (vizType === 'pharmacophore') viewer = window.currentPharmacophoreViewer;
+        else if (vizType === 'scaffold') viewer = window.currentScaffoldViewer;
+        
+        if (viewer && format === 'png') {
+            const png = viewer.pngURI();
+            const a = document.createElement('a');
+            a.href = png;
+            a.download = `molecule_${vizType}_${smiles.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showAlert('Exported as PNG', 'success');
+        } else if (format === 'svg') {
+            showAlert('SVG export not available for 3D visualizations', 'warning');
+        } else if (format === 'pdf') {
+            showAlert('PDF export not yet implemented', 'info');
+        }
+    } else if (window.currentVisualizationData && window.currentVisualizationData.svg) {
+        // Export SVG data for 2D visualizations
+        if (format === 'svg') {
+            const blob = new Blob([window.currentVisualizationData.svg], { type: 'image/svg+xml' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `molecule_${vizType}_${smiles.replace(/[^a-zA-Z0-9]/g, '_')}.svg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            showAlert('Exported as SVG', 'success');
+        } else {
+            showAlert(`${format.toUpperCase()} export not available for 2D visualizations`, 'info');
+        }
+    } else {
+        showAlert('No visualization to export', 'warning');
+    }
+}
+
+function toggleFullscreen() {
+    const vizDiv = document.getElementById('main-visualization');
+    const vizType = document.getElementById('viz-type').value;
+    
+    if (!document.fullscreenElement) {
+        // Entering fullscreen
+        vizDiv.requestFullscreen().then(() => {
+            // Add fullscreen class for styling
+            vizDiv.classList.add('fullscreen-mode');
+            
+            // If it's a 3D visualization, modify the layout for fullscreen
+            const vizType = document.getElementById('viz-type')?.value;
+            if (vizType === '3d' && document.getElementById('3d-viewer')) {
+                createFullscreen3DLayout();
+            } else if (vizType === 'surface' && document.getElementById('surface-3d-viewer')) {
+                createFullscreenSurfaceLayout();
+            } else if (vizType === 'pharmacophore' && document.getElementById('pharmacophore-3d-viewer')) {
+                createFullscreenPharmacophoreLayout();
+            } else if (vizType === 'scaffold' && document.getElementById('scaffold-3d-viewer')) {
+                createFullscreenScaffoldLayout();
+            }
+            
+            // Update fullscreen button text
+            const btn = document.getElementById('fullscreen-btn');
+            btn.innerHTML = '<i data-lucide="minimize" class="w-4 h-4 mr-1"></i>Exit Fullscreen';
+            if (window.lucide) lucide.createIcons();
+            
+        }).catch(err => {
+            showAlert('Could not enter fullscreen mode', 'warning');
+        });
+    } else {
+        // Exiting fullscreen
+        document.exitFullscreen();
+    }
+}
+
+function createFullscreen3DLayout() {
+    const vizDiv = document.getElementById('main-visualization');
+    const currentData = window.currentVisualizationData;
+    
+    if (!currentData) return;
+    
+    // Create a simplified fullscreen layout with just the 3D viewer
+    vizDiv.innerHTML = `
+        <div class="w-full h-full bg-black flex flex-col">
+            <div class="flex items-center justify-between p-4 bg-gray-900 text-white">
+                <div class="flex items-center space-x-4">
+                    <h3 class="text-lg font-semibold">3D Molecular Visualization</h3>
+                    <code class="text-sm bg-gray-800 px-2 py-1 rounded">${document.getElementById('viz-input').value}</code>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <select id="fs-3d-style" onchange="update3DStyle(this.value)" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                        <option value="stick">Stick</option>
+                        <option value="sphere">Ball & Stick</option>
+                        <option value="line">Wireframe</option>
+                    </select>
+                    <select id="fs-3d-color" onchange="update3DColor(this.value)" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                        <option value="default">By Element</option>
+                        <option value="carbon">Carbon</option>
+                        <option value="spectrum">Spectrum</option>
+                        <option value="white">White</option>
+                    </select>
+                    <button onclick="reset3DView()" class="px-3 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600 hover:bg-gray-700 transition-colors">
+                        <i data-lucide="refresh-cw" class="w-3 h-3 inline mr-1"></i>
+                        Reset
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 p-4 flex items-center justify-center">
+                <div id="3d-viewer" class="w-full h-full bg-black rounded-lg" style="min-height: calc(100vh - 120px);"></div>
+            </div>
+        </div>
+    `;
+    
+    // Re-initialize icons
+    if (window.lucide) lucide.createIcons();
+    
+    // Re-initialize the 3D viewer in the new layout
+    setTimeout(() => {
+        if (typeof $3Dmol !== 'undefined') {
+            init3DMolViewer(currentData);
+        }
+    }, 200);
+}
+
+function createFullscreenSurfaceLayout() {
+    const vizDiv = document.getElementById('main-visualization');
+    const currentData = window.currentVisualizationData;
+    const smiles = document.getElementById('viz-input').value;
+    
+    if (!currentData) return;
+    
+    // Create a simplified fullscreen layout matching 3D model
+    vizDiv.innerHTML = `
+        <div class="w-full h-full bg-black flex flex-col">
+            <div class="flex items-center justify-between p-4 bg-gray-900 text-white">
+                <div class="flex items-center space-x-4">
+                    <h3 class="text-lg font-semibold">Molecular Surface</h3>
+                    <code class="text-sm bg-gray-800 px-2 py-1 rounded">${smiles}</code>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <select id="fs-surface-style" onchange="syncAllStyleDropdowns(this.value)" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                        <option value="stick">Stick</option>
+                        <option value="sphere">Ball & Stick</option>
+                        <option value="line">Wireframe</option>
+                        <option value="cross">Cross</option>
+                    </select>
+                    <select id="fs-surface-type" onchange="updateSurfaceType()" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                        <option value="vdw">VdW Surface</option>
+                        <option value="sas">SAS Surface</option>
+                        <option value="none">No Surface</option>
+                    </select>
+                    <button onclick="resetSurfaceView()" class="px-3 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600 hover:bg-gray-700 transition-colors">
+                        <i data-lucide="refresh-cw" class="w-3 h-3 inline mr-1"></i>
+                        Reset
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 p-4 flex items-center justify-center">
+                <div id="surface-3d-viewer" class="w-full h-full bg-black rounded-lg" style="min-height: calc(100vh - 120px);"></div>
+            </div>
+        </div>
+    `;
+    
+    // Re-initialize icons and surface viewer
+    if (window.lucide) lucide.createIcons();
+    
+    setTimeout(() => {
+        if (typeof $3Dmol !== 'undefined' && currentData.atoms) {
+            const element = document.getElementById('surface-3d-viewer');
+            element.style.position = 'relative';
+            element.style.width = '100%';
+            element.style.height = '100%';
+            
+            const viewer = $3Dmol.createViewer(element, {
+                defaultcolors: $3Dmol.elementColors.Jmol,
+                backgroundColor: 'black'
+            });
+            
+            let xyzData = `${currentData.atoms.length}\nMolecular Surface\n`;
+            for (const atom of currentData.atoms) {
+                xyzData += `${atom.symbol} ${atom.x.toFixed(6)} ${atom.y.toFixed(6)} ${atom.z.toFixed(6)}\n`;
+            }
+            
+            viewer.addModel(xyzData, 'xyz');
+            viewer.setStyle({}, {stick: {radius: 0.15}, sphere: {radius: 0.3}});
+            viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.7, color: 'lightblue'});
+            viewer.center();
+            viewer.zoomTo();
+            viewer.render();
+            
+            window.currentSurfaceViewer = viewer;
+        }
+    }, 200);
+}
+
+function createFullscreenPharmacophoreLayout() {
+    const vizDiv = document.getElementById('main-visualization');
+    const currentData = window.currentVisualizationData;
+    const smiles = document.getElementById('viz-input').value;
+    
+    if (!currentData) return;
+    
+    // Create a simplified fullscreen layout matching 3D model
+    vizDiv.innerHTML = `
+        <div class="w-full h-full bg-black flex flex-col">
+            <div class="flex items-center justify-between p-4 bg-gray-900 text-white">
+                <div class="flex items-center space-x-4">
+                    <h3 class="text-lg font-semibold">Pharmacophore Features</h3>
+                    <code class="text-sm bg-gray-800 px-2 py-1 rounded">${smiles}</code>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <select id="fs-pharmacophore-style" onchange="syncAllStyleDropdowns(this.value)" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                        <option value="stick">Stick</option>
+                        <option value="sphere">Ball & Stick</option>
+                        <option value="line">Wireframe</option>
+                        <option value="cross">Cross</option>
+                    </select>
+                    <select id="fs-pharmacophore-features" onchange="updatePharmacophoreFeatures()" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                        <option value="all">All Features</option>
+                        <option value="donors">H-Donors</option>
+                        <option value="acceptors">H-Acceptors</option>
+                        <option value="aromatic">Aromatic</option>
+                    </select>
+                    <button onclick="resetPharmacophoreView()" class="px-3 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600 hover:bg-gray-700 transition-colors">
+                        <i data-lucide="refresh-cw" class="w-3 h-3 inline mr-1"></i>
+                        Reset
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 p-4 flex items-center justify-center">
+                <div id="pharmacophore-3d-viewer" class="w-full h-full bg-black rounded-lg" style="min-height: calc(100vh - 120px);"></div>
+            </div>
+        </div>
+    `;
+    
+    // Re-initialize icons and pharmacophore viewer
+    if (window.lucide) lucide.createIcons();
+    
+    setTimeout(() => {
+        if (typeof $3Dmol !== 'undefined' && currentData.atoms) {
+            const element = document.getElementById('pharmacophore-3d-viewer');
+            element.style.position = 'relative';
+            element.style.width = '100%';
+            element.style.height = '100%';
+            
+            const viewer = $3Dmol.createViewer(element, {
+                defaultcolors: $3Dmol.elementColors.Jmol,
+                backgroundColor: 'black'
+            });
+            
+            let xyzData = `${currentData.atoms.length}\nPharmacophore Model\n`;
+            for (const atom of currentData.atoms) {
+                xyzData += `${atom.symbol} ${atom.x.toFixed(6)} ${atom.y.toFixed(6)} ${atom.z.toFixed(6)}\n`;
+            }
+            
+            viewer.addModel(xyzData, 'xyz');
+            viewer.setStyle({}, {stick: {radius: 0.1, opacity: 0.7}});
+            
+            // Add pharmacophore features as colored spheres
+            const featureSphereColors = {
+                'hydrogen_donor': 'blue',
+                'hydrogen_acceptor': 'red', 
+                'aromatic_ring': 'purple',
+                'hydrophobic': 'green'
+            };
+            
+            if (currentData.features) {
+                currentData.features.forEach(feature => {
+                    if (feature.position && feature.position.length >= 3) {
+                        viewer.addSphere({
+                            center: {x: feature.position[0], y: feature.position[1], z: feature.position[2]},
+                            radius: 1.0,
+                            color: featureSphereColors[feature.type] || 'orange',
+                            alpha: 0.6
+                        });
+                    }
+                });
+            }
+            
+            viewer.center();
+            viewer.zoomTo();
+            viewer.render();
+            
+            window.currentPharmacophoreViewer = viewer;
+        }
+    }, 200);
+}
+
+function createFullscreenScaffoldLayout() {
+    const vizDiv = document.getElementById('main-visualization');
+    const currentData = window.currentVisualizationData;
+    const smiles = document.getElementById('viz-input').value;
+    
+    if (!currentData) return;
+    
+    // Create a simplified fullscreen layout matching 3D model
+    vizDiv.innerHTML = `
+        <div class="w-full h-full bg-black flex flex-col">
+            <div class="flex items-center justify-between p-4 bg-gray-900 text-white">
+                <div class="flex items-center space-x-4">
+                    <h3 class="text-lg font-semibold">Scaffold Analysis</h3>
+                    <code class="text-sm bg-gray-800 px-2 py-1 rounded">${smiles}</code>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <select id="fs-scaffold-style" onchange="syncAllStyleDropdowns(this.value)" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                        <option value="stick">Stick</option>
+                        <option value="sphere">Ball & Stick</option>
+                        <option value="line">Wireframe</option>
+                        <option value="cross">Cross</option>
+                    </select>
+                    <select id="fs-scaffold-color" onchange="updateScaffoldColor()" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                        <option value="scaffold">Scaffold Colors</option>
+                        <option value="default">By Element</option>
+                    </select>
+                    <button onclick="resetScaffoldView()" class="px-3 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600 hover:bg-gray-700 transition-colors">
+                        <i data-lucide="refresh-cw" class="w-3 h-3 inline mr-1"></i>
+                        Reset
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 p-4 flex items-center justify-center">
+                <div id="scaffold-3d-viewer" class="w-full h-full bg-black rounded-lg" style="min-height: calc(100vh - 120px);"></div>
+            </div>
+        </div>
+    `;
+    
+    // Re-initialize icons and scaffold viewer
+    if (window.lucide) lucide.createIcons();
+    
+    setTimeout(() => {
+        if (typeof $3Dmol !== 'undefined' && currentData.atoms) {
+            const element = document.getElementById('scaffold-3d-viewer');
+            element.style.position = 'relative';
+            element.style.width = '100%';
+            element.style.height = '100%';
+            
+            const viewer = $3Dmol.createViewer(element, {
+                defaultcolors: $3Dmol.elementColors.Jmol,
+                backgroundColor: 'black'
+            });
+            
+            let xyzData = `${currentData.atoms.length}\nScaffold Analysis\n`;
+            for (const atom of currentData.atoms) {
+                xyzData += `${atom.symbol} ${atom.x.toFixed(6)} ${atom.y.toFixed(6)} ${atom.z.toFixed(6)}\n`;
+            }
+            
+            viewer.addModel(xyzData, 'xyz');
+            
+            // Apply scaffold coloring
+            const sideChainAtoms = currentData.side_chain_atoms || [];
+            const sideChainIndices = sideChainAtoms.map(atom => atom.index);
+            
+            if (sideChainIndices.length > 0) {
+                viewer.setStyle({not: {index: sideChainIndices}}, {
+                    stick: {radius: 0.2, color: 'orange'}, 
+                    sphere: {radius: 0.4, color: 'orange'}
+                });
+                viewer.setStyle({index: sideChainIndices}, {
+                    stick: {radius: 0.15, color: 'gray'}, 
+                    sphere: {radius: 0.3, color: 'gray'}
+                });
+            } else {
+                viewer.setStyle({}, {
+                    stick: {radius: 0.15, color: 'orange'}, 
+                    sphere: {radius: 0.3, color: 'orange'}
+                });
+            }
+            
+            viewer.center();
+            viewer.zoomTo();
+            viewer.render();
+            
+            window.currentScaffoldViewer = viewer;
+            window.currentScaffoldData = currentData;
+        }
+    }, 200);
+}
+
+// Listen for fullscreen changes
+document.addEventListener('fullscreenchange', function() {
+    const vizDiv = document.getElementById('main-visualization');
+    const btn = document.getElementById('fullscreen-btn');
+    
+    if (!document.fullscreenElement) {
+        // Exited fullscreen - restore original layout
+        vizDiv.classList.remove('fullscreen-mode');
+        btn.innerHTML = '<i data-lucide="maximize" class="w-4 h-4 mr-1"></i>Fullscreen';
+        
+        // Regenerate the visualization to restore the normal layout
+        const vizType = document.getElementById('viz-type').value;
+        if (window.currentVisualizationData) {
+            displayVisualization(window.currentVisualizationData, document.getElementById('viz-input').value, vizType);
+        }
+        
+        if (window.lucide) lucide.createIcons();
+    }
+});
+
+function resetView() {
+    const vizType = document.getElementById('viz-type').value;
+    
+    if (vizType === '3d' && window.current3DViewer) {
+        // Reset 3D view
+        reset3DView();
+        showAlert('3D view reset', 'success');
+    } else {
+        // For other visualization types, just show a message
+        showAlert('View reset', 'info');
+    }
+}
+
+async function generateBatchVisualizations() {
+    const fileInput = document.getElementById('batch-viz-file');
+    const vizType = document.getElementById('viz-type').value;
+    const batchFormat = document.getElementById('viz-batch-format').value;
+    const file = fileInput.files[0];
+
+    if (!file) {
+        showAlert('Please select a file', 'warning');
+        return;
+    }
+
+    try {
+        document.getElementById('main-visualization').innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full space-y-3">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <div class="text-center">
+                    <p class="text-gray-700 font-medium">Processing ${file.name}...</p>
+                    <p class="text-sm text-gray-500">Generating ${vizType.toUpperCase()} visualizations</p>
+                    <p class="text-xs text-gray-400 mt-2">This may take a moment for large files</p>
+                </div>
+            </div>
+        `;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('viz_type', vizType);
+        formData.append('output_format', batchFormat);
+
+        // Add visualization options based on type
+        if (vizType === '2d') {
+            formData.append('width', document.getElementById('image-width').value);
+            formData.append('height', document.getElementById('image-height').value);
+            formData.append('drawing_style', document.getElementById('drawing-style').value);
+        } else if (vizType === '3d') {
+            formData.append('conformer_generation', document.getElementById('conf-generation').value);
+            formData.append('render_style', document.getElementById('render-style').value);
+            formData.append('color_scheme', document.getElementById('color-scheme').value);
+        }
+
+        const response = await fetch('/api/v1/visualization/batch_file', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (batchFormat === 'zip') {
+            // ZIP download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `visualizations_${file.name.replace(/\.[^.]+$/, '')}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            document.getElementById('main-visualization').innerHTML = `
+                <div class="text-center py-12">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                        <i data-lucide="download" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">ZIP Archive Downloaded!</h3>
+                    <p class="text-gray-600">Check your downloads folder for the images</p>
+                    <p class="text-sm text-gray-500 mt-2">File: visualizations_${file.name.replace(/\.[^.]+$/, '')}.zip</p>
+                </div>
+            `;
+            lucide.createIcons();
+        } else {
+            // Grid display
+            const data = await response.json();
+
+            if (data.success) {
+                displayBatchVisualizationResults(data);
+            } else {
+                showAlert(data.error || 'Batch visualization failed', 'danger');
+                document.getElementById('main-visualization').innerHTML = '';
+            }
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Network error occurred', 'danger');
+        document.getElementById('main-visualization').innerHTML = '';
+    }
+}
+
+function displayBatchVisualizationResults(data) {
+    const results = data.results || [];
+    const successful = data.num_successful || 0;
+    const total = data.num_molecules || 0;
+
+    let html = `
+        <div class="mb-6 bg-gradient-to-r from-indigo-50 to-indigo-100 p-4 rounded-lg border border-indigo-200">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Batch Visualization Results</h3>
+            <div class="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                    <span class="text-gray-600">File:</span>
+                    <span class="ml-2 font-medium">${data.file_name}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Type:</span>
+                    <span class="ml-2 font-medium">${data.viz_type || '2D'}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Success:</span>
+                    <span class="ml-2 font-bold text-green-700">${successful} / ${total}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[600px] overflow-y-auto p-2">
+            ${results.slice(0, 50).map((result, idx) => `
+                <div class="border border-gray-200 rounded-lg p-3 hover:border-indigo-300 hover:shadow-md transition-all">
+                    ${result.error ? `
+                        <div class="flex items-center justify-center h-32 bg-red-50 rounded">
+                            <i data-lucide="alert-circle" class="w-8 h-8 text-red-400"></i>
+                        </div>
+                    ` : result.svg ? `
+                        <div class="flex items-center justify-center bg-white rounded mb-2">
+                            ${result.svg}
+                        </div>
+                    ` : `
+                        <div class="flex items-center justify-center h-32 bg-gray-100 rounded">
+                            <i data-lucide="image" class="w-8 h-8 text-gray-400"></i>
+                        </div>
+                    `}
+                    <div class="mt-2">
+                        <h4 class="text-xs font-medium text-gray-900 truncate">${result.name}</h4>
+                        <code class="text-xs text-gray-600 truncate block">${result.smiles}</code>
+                        ${result.error ? `
+                            <p class="text-xs text-red-600 mt-1">${result.error}</p>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+
+        ${results.length > 50 ? `
+            <div class="mt-4 text-center text-sm text-gray-500">
+                Showing 50 of ${results.length} results (download ZIP for all images)
+            </div>
+        ` : ''}
+    `;
+
+    document.getElementById('main-visualization').innerHTML = html;
+    lucide.createIcons();
+}
+
+function showAlert(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 max-w-sm p-4 rounded-lg shadow-lg border ${
+        type === 'danger' ? 'bg-red-50 border-red-200 text-red-800' :
+        type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+        type === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+        'bg-blue-50 border-blue-200 text-blue-800'
+    }`;
+    toast.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i data-lucide="${
+                type === 'danger' ? 'alert-circle' : 
+                type === 'warning' ? 'alert-triangle' : 
+                type === 'success' ? 'check-circle' : 'info'
+            }" class="w-4 h-4"></i>
+            <span class="text-sm font-medium">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-auto">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    lucide.createIcons();
+    
+    setTimeout(() => toast.remove(), 5000);
+}
+</script>
+{% endblock %}
