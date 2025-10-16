@@ -4,8 +4,6 @@ A comprehensive, production-ready web application providing an intuitive interfa
 
 ![NuGenRDKit Home Screen](nugenrdkit.png)
 
-🌐 **[Live Demo](http://localhost:8000)** | 📚 **[API Documentation](#api-endpoints)** | 🧬 **Built with RDKit 2025.3.5** | ⚡ **6,500+ Lines of Code**
-
 ## ✨ Key Features
 
 ### 🖥️ **Modern Web Interface**
