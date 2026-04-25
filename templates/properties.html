@@ -3,24 +3,12 @@
 {% block title %}Molecular Properties - NuGenRDKit{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <!-- Page Header -->
-    <div class="mb-8">
-        <div class="flex items-center space-x-3 mb-4">
-            <div class="flex items-center justify-center w-12 h-12 bg-pink-100 rounded-lg">
-                <i data-lucide="flask-conical" class="w-6 h-6 text-pink-600"></i>
-            </div>
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Molecular Properties</h1>
-                <p class="text-gray-600">Analyze drug-likeness, ADMET properties, and molecular characteristics</p>
-            </div>
-        </div>
-    </div>
-
+{% from "_partials/_tool_page.html" import tool_page %}
+{% call tool_page(title="Properties", icon="flask-conical", description="Drug-likeness, ADMET, QED, BRICS / RECAP scaffolds.", accent="pink") %}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Input Section -->
         <div class="lg:col-span-1">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
+            <div class="card card-body sticky top-24">
                 <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                     <i data-lucide="flask-conical" class="w-5 h-5 mr-2"></i>
                     Property Analysis
@@ -70,12 +58,12 @@
                             <span class="text-sm font-medium text-pink-900">Batch: Upload molecule file</span>
                         </div>
                         <input type="file"
-                               id="batch-properties-file"
+                               id="batch-properties-file" aria-label="Upload molecule file for batch properties"
                                accept=".smi,.smiles,.sdf,.csv,.txt"
                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100">
                         <div class="mt-2 flex items-center space-x-2">
                             <label class="text-xs text-gray-600">Export as:</label>
-                            <select id="properties-export-format" class="text-xs border-gray-300 rounded px-2 py-1">
+                            <select id="properties-export-format" aria-label="Choose properties export format" class="text-xs border-gray-300 rounded px-2 py-1">
                                 <option value="json">JSON</option>
                                 <option value="csv">CSV</option>
                             </select>
@@ -142,7 +130,7 @@
         <div class="lg:col-span-2">
             <div class="space-y-6">
                 <!-- Property Dashboard -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-semibold text-gray-900 flex items-center">
                             <i data-lucide="chart-line" class="w-5 h-5 mr-2"></i>
@@ -167,7 +155,7 @@
                 </div>
 
                 <!-- Drug-likeness Rules -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <i data-lucide="shield-check" class="w-5 h-5 mr-2"></i>
                         Drug-likeness Assessment
@@ -184,7 +172,7 @@
                 </div>
 
                 <!-- Molecular Structure Display -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <i data-lucide="eye" class="w-5 h-5 mr-2"></i>
                         Molecular Structure
@@ -208,7 +196,7 @@
             </div>
         </div>
     </div>
-</div>
+{% endcall %}
 {% endblock %}
 
 {%- block extra_scripts %}

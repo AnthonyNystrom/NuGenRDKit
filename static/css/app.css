@@ -20,19 +20,25 @@
 
 /* ---------------------------------------------------------------
  * 1) Reset & base
+ *
+ * Dense default per Phase A: body inherits --fs-body (13 px in
+ * dense, 15 px in comfortable). The `.text-base / .text-sm` utility
+ * classes still resolve to 16 / 14 px because they read --fs-base /
+ * --fs-sm directly — explicit utility-class usage is preserved.
  * --------------------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; padding: 0; border: 0 solid var(--border-default); }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body {
   font-family: var(--font-sans);
-  font-size: var(--fs-base);
-  line-height: var(--lh-relaxed);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
   color: var(--text-default);
   background: var(--surface-page);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
 }
 img, svg, video, canvas { display: block; max-width: 100%; height: auto; }
 button { background: none; cursor: pointer; font: inherit; color: inherit; }
@@ -146,6 +152,11 @@ h1, h2, h3, h4, h5, h6 { font-weight: inherit; font-size: inherit; }
 .min-w-full { min-width: 100%; }
 .min-h-screen { min-height: 100vh; }
 
+.max-w-sm  { max-width: 24rem; }
+.max-w-md  { max-width: 28rem; }
+.max-w-lg  { max-width: 32rem; }
+.max-w-xl  { max-width: 36rem; }
+.max-w-2xl { max-width: 42rem; }
 .max-w-3xl { max-width: 48rem; }
 .max-w-4xl { max-width: 56rem; }
 .max-w-6xl { max-width: 72rem; }
@@ -800,4 +811,1553 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ============================================================
+ * Phase A — Chemist-First component primitives
+ *
+ * These class names are the post-overhaul vocabulary. Templates
+ * keep using the legacy utility classes (bg-blue-50, etc.) until
+ * Phase D migrates them; until then both layers coexist.
+ *
+ * Naming convention:
+ *   .btn-app-{primary,secondary,ghost,danger,sm}   buttons
+ *   .form-{input,select,textarea,label,help,row}   form controls
+ *   .card[, .card--accent, .card--muted]           surface cards
+ *   .data-table                                    dense data table
+ *   .badge-app-{neutral,info,success,warn,error}   status pills
+ *   .alert-app-{info,success,warn,error}           inline alerts
+ *   .kbd                                           keyboard glyph
+ *   .uppercase-label                               11px uppercase
+ * ============================================================ */
+
+/* ---------- Buttons ---------- */
+.btn-app-primary,
+.btn-app-secondary,
+.btn-app-ghost,
+.btn-app-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: var(--ctl-h-md);
+  padding: 0 0.875rem;
+  font-size: var(--fs-body);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--t-fast), border-color var(--t-fast),
+              color var(--t-fast), box-shadow var(--t-fast);
+  user-select: none;
+}
+.btn-app-primary {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+.btn-app-primary:hover { background: var(--accent-hover); }
+.btn-app-secondary {
+  background: var(--surface-card);
+  color: var(--text-default);
+  border-color: var(--border-strong);
+}
+.btn-app-secondary:hover { background: var(--surface-hover); }
+.btn-app-ghost {
+  background: transparent;
+  color: var(--text-default);
+}
+.btn-app-ghost:hover { background: var(--surface-hover); }
+.btn-app-danger {
+  background: var(--red-600);
+  color: #ffffff;
+}
+.btn-app-danger:hover { background: var(--red-700); }
+.btn-app-primary:disabled,
+.btn-app-secondary:disabled,
+.btn-app-ghost:disabled,
+.btn-app-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-app-sm { height: var(--ctl-h-sm); padding: 0 0.625rem; font-size: var(--fs-data); }
+.btn-app-lg { height: var(--ctl-h-lg); padding: 0 1rem; font-size: var(--fs-body-lg); }
+
+/* ---------- Forms ---------- */
+.form-row { margin-bottom: var(--space-row); }
+.form-row + .form-row { margin-top: var(--space-row); }
+
+.form-label {
+  display: block;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  display: block;
+  width: 100%;
+  height: var(--ctl-h-md);
+  padding: var(--space-input-y) var(--space-input-x);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.2;
+  color: var(--text-default);
+  background: var(--surface-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.form-textarea { height: auto; min-height: 5rem; line-height: var(--lh-body); }
+.form-input--mono,
+.form-textarea--mono { font-family: var(--font-mono); font-size: var(--fs-mono); }
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgb(2 132 199 / 0.18);
+}
+.form-input::placeholder,
+.form-textarea::placeholder { color: var(--text-faint); }
+.form-input:disabled,
+.form-select:disabled,
+.form-textarea:disabled { opacity: 0.6; background: var(--surface-muted); }
+
+.form-help { font-size: var(--fs-data); color: var(--text-muted); margin-top: 0.25rem; }
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.card--muted { background: var(--surface-muted); }
+.card--accent { border-color: var(--primary-300); }
+.card-header {
+  padding: var(--space-card-y) var(--space-card-x);
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.card-header h2,
+.card-header h3 {
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  color: var(--text-default);
+}
+.card-body { padding: var(--space-card-y) var(--space-card-x); }
+.card-footer {
+  padding: var(--space-card-y) var(--space-card-x);
+  border-top: 1px solid var(--border-default);
+  background: var(--surface-muted);
+}
+
+/* ---------- Uppercase label (standalone — for table headers, etc.) ---------- */
+.uppercase-label {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ---------- Data table ---------- */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-data);
+  line-height: var(--lh-data);
+}
+.data-table thead th {
+  padding: var(--space-cell-y) var(--space-cell-x);
+  background: var(--surface-muted);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: left;
+  border-bottom: 1px solid var(--border-strong);
+  position: sticky;
+  top: 0;
+}
+.data-table tbody td {
+  padding: var(--space-cell-y) var(--space-cell-x);
+  border-bottom: 1px solid var(--border-default);
+  vertical-align: top;
+}
+.data-table tbody tr:nth-child(even) td { background: var(--surface-muted); }
+.data-table tbody tr:hover td { background: var(--accent-soft); }
+.data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table .mono { font-family: var(--font-mono); font-size: var(--fs-mono); }
+
+/* sortable-header indicator (Phase E populates the sort state) */
+.data-table th[data-sort-by] { cursor: pointer; user-select: none; }
+.data-table th[data-sort-by]::after {
+  content: "";
+  display: inline-block;
+  width: 0.75rem;
+  margin-left: 0.25rem;
+  opacity: 0.4;
+}
+.data-table th[data-sort-direction="asc"]::after  { content: "▲"; opacity: 0.85; }
+.data-table th[data-sort-direction="desc"]::after { content: "▼"; opacity: 0.85; }
+
+/* ---------- Status badges ---------- */
+.badge-app-neutral,
+.badge-app-info,
+.badge-app-success,
+.badge-app-warn,
+.badge-app-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+.badge-app-neutral {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  border-color: var(--border-default);
+}
+.badge-app-info {
+  background: var(--status-info-bg);
+  color: var(--status-info-fg);
+  border-color: var(--status-info-bd);
+}
+.badge-app-success {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+  border-color: var(--status-success-bd);
+}
+.badge-app-warn {
+  background: var(--status-warn-bg);
+  color: var(--status-warn-fg);
+  border-color: var(--status-warn-bd);
+}
+.badge-app-error {
+  background: var(--status-error-bg);
+  color: var(--status-error-fg);
+  border-color: var(--status-error-bd);
+}
+
+/* ---------- Inline alerts ---------- */
+.alert-app-info,
+.alert-app-success,
+.alert-app-warn,
+.alert-app-error {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--fs-data);
+  line-height: var(--lh-data);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+}
+.alert-app-info    { background: var(--status-info-bg);    color: var(--status-info-fg);    border-color: var(--status-info-bd); }
+.alert-app-success { background: var(--status-success-bg); color: var(--status-success-fg); border-color: var(--status-success-bd); }
+.alert-app-warn    { background: var(--status-warn-bg);    color: var(--status-warn-fg);    border-color: var(--status-warn-bd); }
+.alert-app-error   { background: var(--status-error-bg);   color: var(--status-error-fg);   border-color: var(--status-error-bd); }
+
+/* ---------- Keyboard glyph ---------- */
+.kbd {
+  display: inline-block;
+  padding: 0.0625rem 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  border: 1px solid var(--border-default);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Section heading ---------- */
+.section-title {
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  color: var(--text-default);
+  margin-bottom: 0.5rem;
+}
+.page-title {
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-default);
+}
+.page-subtitle {
+  font-size: var(--fs-data);
+  color: var(--text-muted);
+}
+
+/* ---------- ResultsCard density tweaks (overrides Phase 4 markup) ---------- */
+.results-card {
+  border-radius: var(--radius-md);
+}
+.results-card header {
+  padding: var(--space-card-y) var(--space-card-x);
+}
+.results-card .rc-body {
+  padding: var(--space-card-y) var(--space-card-x);
+}
+.results-card .rc-tab {
+  padding: 0.375rem 0.625rem;
+  font-size: var(--fs-data);
+}
+
+/* ---------- Toolbar (sticky bar inside input panes) ---------- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem var(--space-card-x);
+  background: var(--surface-card);
+  border-top: 1px solid var(--border-default);
+  position: sticky;
+  bottom: 0;
+}
+
+/* ============================================================
+ * Phase B — Application shell.
+ *
+ * Layout:
+ *   <body>
+ *     <a class="skip-link">…</a>
+ *     <header class="topbar">…44px…</header>
+ *     <div class="app-shell-grid">
+ *       <aside class="sidebar">…220px…</aside>
+ *       <main class="app-main">…page content…</main>
+ *     </div>
+ *   </body>
+ *
+ * The topbar is in normal flow (not sticky) so it doesn't overlap
+ * the sidebar's scroll. The sidebar + main occupy the rest of the
+ * viewport via a CSS grid. Mobile (<1024 px) collapses to a single
+ * column with the sidebar overlayed via .is-open.
+ * ============================================================ */
+
+/* ---------- Skip link (visible only when keyboard-focused) ---------- */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-card);
+  color: var(--accent);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-data);
+  font-weight: 500;
+  z-index: 100;
+  transition: top var(--t-fast);
+}
+.skip-link:focus { top: 0.5rem; }
+
+/* ---------- Topbar ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  height: var(--topbar-h);
+  padding: 0 var(--space-card-x);
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-default);
+  gap: 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-default);
+  padding-right: var(--space-card-x);
+  margin-right: var(--space-card-x);
+  margin-left: calc(var(--space-card-x) * -1);
+  padding-left: var(--space-card-x);
+  height: 100%;
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-default);
+}
+.topbar-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  background: var(--accent);
+  color: #ffffff;
+  border-radius: var(--radius-md);
+}
+.topbar-brand-text {
+  font-size: var(--fs-body-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+/* Search lives flush-left next to the brand, like Linear / GitHub.
+ * The flex-grow lets the right-side icon cluster push to the edge,
+ * but max-width caps it from spanning the entire topbar. */
+.topbar-center {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: flex-start;
+  min-width: 0;
+}
+.topbar-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 22rem;
+  padding: 0 0.625rem;
+  background: var(--surface-page);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+.topbar-search:focus-within {
+  border-color: var(--border-focus);
+  background: var(--surface-card);
+  box-shadow: 0 0 0 3px rgb(2 132 199 / 0.18);
+}
+.topbar-search input {
+  flex: 1 1 auto;
+  height: var(--ctl-h-sm);
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: var(--fs-body);
+  color: var(--text-default);
+}
+.topbar-search-kbd { display: inline-flex; align-items: center; }
+
+/* Command palette anchored as a dropdown under the topbar search input.
+ * Position is set in JS (positionUnderAnchor); CSS owns visual treatment
+ * and the hide state. No backdrop — clicking outside dismisses. */
+.nug-palette {
+  position: fixed;
+  z-index: 60;
+  /* width / left / top set by JS */
+}
+.nug-palette.hidden { display: none; }
+
+/* Command-palette rows. Active state is driven by JS so arrow-key
+ * navigation can move between Pages and Commands sections seamlessly. */
+.palette-row {
+  border-radius: var(--radius-md);
+  margin: 0 0.25rem;
+  transition: background var(--t-fast);
+}
+.palette-row:hover { background: var(--surface-hover); }
+.palette-row.is-active {
+  background: var(--accent-soft);
+}
+.palette-row.is-active .text-gray-900 { color: var(--text-link); }
+.palette-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.palette-row.is-active .palette-row-icon { color: var(--text-link); }
+.palette-header { user-select: none; }
+
+/* Wrapper that workspace_save.js places around each page's primary
+ * SMILES input + Save-to-workspace button. Keeps the input flexible
+ * while the button sits flush to its right. */
+.nug-ws-save-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 100%;
+}
+.nug-ws-save-wrap > input,
+.nug-ws-save-wrap > textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* Inline action buttons that sit flush next to the SMILES input
+ * (Save → workspace, Library picker). Match the input's height so
+ * the row reads as a single control + sidekicks. */
+.nug-ws-save-btn,
+.nug-lib-pick-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: var(--ctl-h-md);
+  padding: 0 0.625rem;
+  font-size: var(--fs-data);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--text-default);
+  background: var(--surface-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+}
+.nug-ws-save-btn:hover,
+.nug-lib-pick-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.nug-ws-save-btn > svg,
+.nug-lib-pick-btn > svg { flex-shrink: 0; }
+
+/* ===============================================================
+ * Workspace drawer row — click body to load, hover-revealed
+ * actions on the right (copy / send-to / delete).
+ * =============================================================== */
+.nug-workspace-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background: var(--surface-card);
+  transition: background-color var(--t-fast);
+}
+.nug-workspace-item:hover { background: var(--surface-hover); }
+.nug-workspace-item.opacity-50 { opacity: 0.5; }
+
+.ws-drag-handle {
+  flex-shrink: 0;
+  color: var(--text-faint);
+  cursor: grab;
+  user-select: none;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  padding-top: 0.125rem;
+}
+.ws-row-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: pointer;
+}
+.ws-row-name {
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--text-default);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ws-row-sub {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.ws-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  flex-shrink: 0;
+}
+.ws-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color var(--t-fast), background-color var(--t-fast), border-color var(--t-fast);
+}
+.ws-act:hover {
+  color: var(--text-default);
+  background: var(--surface-card);
+  border-color: var(--border-default);
+}
+.ws-act-remove:hover { color: var(--red-600); }
+
+/* Send-to dropdown */
+.ws-sendto-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.ws-sendto-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  z-index: 60;
+  min-width: 11rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 0.25rem 0;
+  list-style: none;
+}
+.ws-sendto-menu[hidden] { display: none; }
+.ws-sendto-menu li { margin: 0; }
+.ws-sendto-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-size: var(--fs-body);
+  color: var(--text-default);
+  text-decoration: none;
+  transition: background-color var(--t-fast);
+}
+.ws-sendto-link:hover {
+  background: var(--surface-hover);
+  color: var(--accent);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+.topbar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: var(--ctl-h-md);
+  height: var(--ctl-h-md);
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.topbar-icon-btn:hover {
+  color: var(--text-default);
+  background: var(--surface-hover);
+}
+.topbar-count-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.625rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Sidebar ---------- */
+.app-shell-grid {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  min-height: calc(100vh - var(--topbar-h));
+  background: var(--surface-page);
+}
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--surface-card);
+  border-right: 1px solid var(--border-default);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 0;
+  min-height: 0;
+}
+.sidebar-section {
+  padding: 0.5rem 0.625rem;
+}
+.sidebar-section + .sidebar-section {
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-default);
+}
+.sidebar-section-title {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  /* Phase F+ a11y: bumped from --text-faint to --text-muted for
+   * WCAG AA contrast (gray-500 / 4.61:1 vs gray-400 / 2.65:1). */
+  color: var(--text-muted);
+  padding: 0 0.375rem 0.25rem 0.375rem;
+}
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sidebar-link,
+.sidebar-workspace,
+.sidebar-footer-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  font-size: var(--fs-body);
+  color: var(--text-default);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.sidebar-link:hover,
+.sidebar-workspace:hover,
+.sidebar-footer-link:hover {
+  background: var(--surface-hover);
+  color: var(--text-default);
+}
+.sidebar-link.is-active {
+  background: var(--accent-soft);
+  /* Phase F+ a11y: use the deeper --primary-700 instead of --accent
+   * (sky-600). On the sky-50 background, sky-600 sits at 3.88:1 contrast
+   * (fails AA); sky-700 sits at 5.97:1 (passes). */
+  color: var(--primary-700);
+  font-weight: 600;
+}
+.sidebar-link.is-active .sidebar-link-icon {
+  color: var(--primary-700);
+}
+.sidebar-link-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.sidebar-count {
+  margin-left: auto;
+  min-width: 1.25rem;
+  padding: 0 0.375rem;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  text-align: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: var(--radius-full);
+}
+.sidebar-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sidebar-recent li:not(.sidebar-recent-empty) > button {
+  width: 100%;
+  text-align: left;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  color: var(--text-default);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-recent li:not(.sidebar-recent-empty) > button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.sidebar-recent-empty {
+  font-size: var(--fs-data);
+  color: var(--text-faint);
+  padding: 0.25rem 0.5rem;
+  font-style: italic;
+}
+.sidebar-footer {
+  margin-top: auto;
+}
+.sidebar-footer-link {
+  font-size: var(--fs-data);
+  color: var(--text-muted);
+}
+
+/* ---------- Main ---------- */
+.app-main {
+  padding: var(--space-page-y) var(--space-page-x);
+  overflow-y: auto;
+  min-height: 0;
+  outline: none;
+}
+
+/* ---------- Mobile breakpoint (<1024 px) ---------- */
+.lg-hidden { display: inline-flex; }
+@media (min-width: 1024px) {
+  .lg-hidden { display: none !important; }
+}
+@media (max-width: 1023px) {
+  .app-shell-grid { grid-template-columns: 1fr; }
+  .sidebar {
+    display: none;
+    position: fixed;
+    top: var(--topbar-h);
+    bottom: 0;
+    left: 0;
+    z-index: 25;
+    box-shadow: var(--shadow-lg);
+  }
+  .sidebar.is-open { display: flex; }
+  .topbar-left {
+    width: auto;
+    border-right: none;
+    margin-right: 0;
+    padding-right: 0;
+  }
+  .topbar-brand-text { display: none; }
+  .topbar-search { display: none; }
+}
+
+/* ============================================================
+ * Phase C — Tool-page primitives.
+ *
+ * Every tool page wraps its body in `tool_page` (see
+ * templates/_partials/_tool_page.html). The macro emits a header
+ * (icon tile + title + subtitle) and a body wrapper. Per-page
+ * markup chooses how to lay out the body — usually `.tool-split`
+ * (input pane on the left, results pane on the right).
+ *
+ * The `data-accent="…"` attribute on .tool-page colors the icon
+ * tile via the palette switch below. Existing accent palettes
+ * (blue/green/purple/...) are reused so the per-tool color cue
+ * stays consistent with the previous design.
+ * ============================================================ */
+
+.tool-page { display: flex; flex-direction: column; gap: var(--space-section); }
+
+.tool-page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.tool-page-header-icon {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  /* defaults — overridden by data-accent on the parent */
+  background: var(--blue-50);
+  color: var(--blue-600);
+}
+.tool-page-header-icon i { width: 1.125rem; height: 1.125rem; }
+
+.tool-page-header-text { flex: 1 1 auto; min-width: 0; }
+.tool-page-header-text .page-title { line-height: 1.2; }
+.tool-page-header-text .page-subtitle { margin-top: 0.125rem; }
+
+.tool-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* Accent palette (matches the previous per-tool color cue). */
+.tool-page[data-accent="blue"]    .tool-page-header-icon { background: var(--blue-50);    color: var(--blue-600); }
+.tool-page[data-accent="green"]   .tool-page-header-icon { background: var(--green-50);   color: var(--green-700); }
+.tool-page[data-accent="purple"]  .tool-page-header-icon { background: var(--purple-50);  color: var(--purple-700); }
+.tool-page[data-accent="orange"]  .tool-page-header-icon { background: var(--orange-50);  color: var(--orange-700); }
+.tool-page[data-accent="cyan"]    .tool-page-header-icon { background: var(--cyan-50);    color: var(--cyan-600); }
+.tool-page[data-accent="pink"]    .tool-page-header-icon { background: var(--pink-50);    color: var(--pink-600); }
+.tool-page[data-accent="yellow"]  .tool-page-header-icon { background: var(--yellow-50);  color: var(--yellow-700); }
+.tool-page[data-accent="indigo"]  .tool-page-header-icon { background: var(--indigo-50);  color: var(--indigo-700); }
+.tool-page[data-accent="teal"]    .tool-page-header-icon { background: var(--teal-50);    color: var(--teal-700); }
+.tool-page[data-accent="red"]     .tool-page-header-icon { background: var(--red-50);     color: var(--red-600); }
+
+/* ---------- 2-pane layout (input | results) ---------- */
+.tool-split {
+  display: grid;
+  grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+  gap: var(--space-section);
+}
+@media (max-width: 1023px) {
+  .tool-split { grid-template-columns: 1fr; }
+}
+.tool-input { display: flex; flex-direction: column; gap: var(--space-section); }
+.tool-results { display: flex; flex-direction: column; gap: var(--space-section); min-width: 0; }
+
+/* Wider input pane variant for tools with many parameters
+ * (coordinates, visualization). Use class="tool-split tool-split--wide-input"
+ * on the wrapper. */
+.tool-split--wide-input {
+  grid-template-columns: minmax(0, 28rem) minmax(0, 1fr);
+}
+
+/* 3-column variant (e.g. visualization page with extra preview). */
+.tool-split--triple {
+  grid-template-columns: minmax(0, 22rem) minmax(0, 1fr) minmax(0, 18rem);
+}
+@media (max-width: 1279px) {
+  .tool-split--triple { grid-template-columns: minmax(0, 24rem) minmax(0, 1fr); }
+}
+@media (max-width: 1023px) {
+  .tool-split--triple { grid-template-columns: 1fr; }
+}
+
+/* ---------- File upload styling (compact, file-button on the left) ---------- */
+.file-upload::file-selector-button {
+  margin-right: 0.5rem;
+  padding: 0.25rem 0.625rem;
+  font-size: var(--fs-data);
+  font-weight: 500;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.file-upload::file-selector-button:hover { background: var(--accent-soft-hover); }
+
+/* ---------- ResultsCard empty state (paired with showEmpty) ---------- */
+.rc-empty {
+  text-align: center;
+  padding: 1.25rem 1rem;
+  color: var(--text-muted);
+}
+.rc-empty-icon {
+  width: 2rem;
+  height: 2rem;
+  margin: 0 auto 0.5rem;
+  color: var(--text-faint);
+}
+.rc-empty p { font-size: var(--fs-data); }
+
+/* ---------- Dashboard primitives (used by index.html in Phase D) ---------- */
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-section);
+}
+@media (max-width: 1023px) {
+  .dashboard { grid-template-columns: 1fr; }
+}
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.5rem;
+}
+.tool-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--text-default);
+  font-size: var(--fs-body);
+  transition: background var(--t-fast), border-color var(--t-fast);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.tool-tile:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.tool-tile-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.tool-tile:hover .tool-tile-icon {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+.tool-tile-title {
+  font-weight: 500;
+  font-size: var(--fs-body);
+}
+.tool-tile-sub {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+/* ---------- Stat tiles (e.g. dashboard metrics row) ---------- */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.5rem;
+}
+.stat-tile {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-card-y) var(--space-card-x);
+}
+.stat-tile-label {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+.stat-tile-value {
+  margin-top: 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-default);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Dashboard layout (index.html) ---------- */
+.dashboard-main { display: flex; flex-direction: column; gap: var(--space-section); min-width: 0; }
+.dashboard-side { display: flex; flex-direction: column; gap: var(--space-section); }
+
+.example-chips { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+
+.quick-results {
+  margin-top: var(--space-section);
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  padding-top: var(--space-section);
+  border-top: 1px solid var(--border-default);
+}
+@media (max-width: 1023px) {
+  .quick-results { grid-template-columns: 1fr; }
+}
+.quick-results-pane > .uppercase-label { display: block; margin-bottom: 0.375rem; }
+
+.quick-results-structure {
+  height: 9rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.quick-results-structure svg { width: auto; height: auto; max-width: 100%; max-height: 100%; }
+.quick-results-spin { animation: _spin 1s linear infinite; color: var(--text-faint); }
+
+.quick-results-props {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem 0.5rem;
+}
+.quick-results-props > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+}
+.quick-results-props dt {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.quick-results-props dd {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-default);
+}
+
+.quick-actions { display: flex; flex-direction: column; gap: 0.25rem; }
+
+.recent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.5rem;
+}
+.recent-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.625rem;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.recent-card:hover { background: var(--accent-soft); border-color: var(--accent); }
+.recent-card-name {
+  font-size: var(--fs-data);
+  font-weight: 500;
+  color: var(--text-default);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recent-card-smiles {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recent-card-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+  font-size: var(--fs-label);
+  /* a11y: text-muted (gray-500) clears AA at small sizes;
+   * text-faint (gray-400) does not. */
+  color: var(--text-muted);
+}
+
+/* ---------- KV / link lists ---------- */
+.kv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.kv-list > div, .kv-list > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: var(--fs-data);
+}
+.kv-list dt, .kv-list > li > span:first-child {
+  font-weight: 500;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.kv-list dd {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  color: var(--text-default);
+  font-variant-numeric: tabular-nums;
+}
+
+.link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-data);
+}
+.link-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--text-link);
+  padding: 0.125rem 0;
+}
+.link-list a:hover { text-decoration: underline; }
+
+/* ============================================================
+ * Phase F polish — tooltips for icon-only buttons.
+ *
+ * Add `data-tooltip="…"` to any button/anchor (the CSS hooks the
+ * `[title]` attribute too as a fallback). The tooltip appears
+ * after a small delay on hover / focus, positioned below the
+ * trigger. Keep tooltips short (one phrase).
+ * ============================================================ */
+
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 50%;
+  transform: translateX(-50%) translateY(-2px);
+  padding: 0.25rem 0.5rem;
+  background: var(--gray-900);
+  color: #ffffff;
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-fast), transform var(--t-fast);
+  z-index: 60;
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  transition-delay: 250ms;
+}
+
+/* ============================================================
+ * Phase F polish — loading skeleton.
+ *
+ * Apply `.skeleton` to a placeholder div and it animates a
+ * shimmer. Used while ResultsCard.showLoading is active OR for
+ * per-page custom loading slots.
+ * ============================================================ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-muted) 0%,
+    var(--surface-hover) 50%,
+    var(--surface-muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+/* ============================================================
+ * ResultsCard action buttons + Send-To menu (Phase F polish).
+ * ============================================================ */
+
+.rc-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: var(--fs-data);
+  color: var(--text-default);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.rc-action-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+.rc-sendto-wrap { position: relative; display: inline-block; }
+.rc-sendto-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 50;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: var(--surface-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  min-width: 11rem;
+}
+.rc-sendto-menu li { margin: 0; padding: 0; }
+.rc-sendto-menu a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-data);
+  color: var(--text-default);
+  text-decoration: none;
+}
+.rc-sendto-menu a:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ============================================================
+ * Empty-with-example state (Phase F).
+ *
+ * Markup:
+ *   <div class="rc-empty-with-example">
+ *     <p>Enter a SMILES to see results, or load an example:</p>
+ *     <div class="example-chips">…</div>
+ *   </div>
+ * ============================================================ */
+.rc-empty-with-example {
+  padding: 1rem;
+  text-align: center;
+  background: var(--surface-muted);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+.rc-empty-with-example p {
+  font-size: var(--fs-data);
+  margin-bottom: 0.625rem;
+}
+.rc-empty-with-example .example-chips {
+  justify-content: center;
+}
+
+/* ============================================================
+ * Phase F+ a11y overrides.
+ *
+ * The legacy primary button shape (bg-primary-600 + text-white) hits
+ * exactly 4.51:1 contrast — at the WCAG AA threshold for body text.
+ * axe-core flags it. Bump those buttons to primary-700 (#0369a1 →
+ * 5.97:1) without touching the underlying utility classes (other
+ * uses of bg-primary-600 / text-white that aren't paired stay).
+ * ============================================================ */
+
+button.bg-primary-600,
+input[type="submit"].bg-primary-600,
+.bg-primary-600.text-white,
+button.bg-primary-600.hover\:bg-primary-700:hover,
+button.hover\:bg-primary-700.bg-primary-600:hover {
+  background-color: var(--primary-700);
+}
+button.bg-primary-600:hover,
+.bg-primary-600.text-white:hover {
+  background-color: var(--primary-800);
+}
+
+/* File-input default placeholder text is light gray on white. Force
+ * the form-control color so it inherits text-default; the file
+ * "Choose File" button styling already passes contrast via the
+ * accent rule. */
+input[type="file"] {
+  color: var(--text-default);
+  font-size: var(--fs-data);
+}
+
+/* `.text-primary-600` on white is exactly 4.51:1 — at the WCAG AA
+ * threshold and axe-core flags it. Bump it to primary-700 for the
+ * 5.97:1 contrast we use everywhere else. Same fix for any text
+ * legacy classes that hit gray-400 on white (2.65:1 — fails). */
+.text-primary-600 { color: var(--primary-700); }
+.text-gray-400    { color: var(--gray-500); }
+/* `.text-green-600` on green-100 backgrounds (status tiles) hits
+ * 3.0:1 — fails AA for body text. Bump to green-700 (4.74:1). */
+.text-green-600   { color: var(--green-700); }
+
+/* ===============================================================
+ * Dark-mode overrides for raw utility classes used in templates.
+ *
+ * The semantic surface / text / border tokens already flip via
+ * tokens.css `html[data-theme="dark"]`, but legacy templates carry
+ * literal `bg-white`, `text-gray-900`, etc. that resolve to
+ * baked-light values and don't honour the theme. Re-bind those
+ * classes to the semantic tokens when the dark theme is active so
+ * cards, headings, borders, and dividers all flip consistently.
+ *
+ * Scope: only the utilities that templates actually use on
+ * surface / text / border. Status palettes (red / green / blue
+ * tints) keep their meaning across themes and are NOT remapped.
+ * =============================================================== */
+html[data-theme="dark"] .bg-white       { background-color: var(--surface-card); }
+html[data-theme="dark"] .bg-gray-50     { background-color: var(--surface-raised); }
+html[data-theme="dark"] .bg-gray-100    { background-color: var(--surface-muted); }
+html[data-theme="dark"] .bg-gray-200    { background-color: var(--surface-muted); }
+
+html[data-theme="dark"] .text-gray-900  { color: var(--text-default); }
+html[data-theme="dark"] .text-gray-800  { color: var(--text-default); }
+html[data-theme="dark"] .text-gray-700  { color: var(--text-default); }
+html[data-theme="dark"] .text-gray-600  { color: var(--text-muted); }
+html[data-theme="dark"] .text-gray-500  { color: var(--text-muted); }
+html[data-theme="dark"] .text-gray-400  { color: var(--text-faint); }
+html[data-theme="dark"] .text-gray-300  { color: var(--text-faint); }
+
+html[data-theme="dark"] .border-gray-200  { border-color: var(--border-default); }
+html[data-theme="dark"] .border-gray-300  { border-color: var(--border-strong); }
+html[data-theme="dark"] .divide-gray-200 > * + * { border-color: var(--border-default); }
+
+/* Status tile contrast in dark — light bg-{color}-50/100 + dark-{color}-700
+ * text would invert to bright-on-bright. Switch the tile chrome to a
+ * translucent tint of the same hue and lift the text to a -300 shade. */
+html[data-theme="dark"] .bg-blue-50     { background-color: rgb(37 99 235 / 0.12); }
+html[data-theme="dark"] .bg-blue-100    { background-color: rgb(37 99 235 / 0.18); }
+html[data-theme="dark"] .bg-green-50    { background-color: rgb(22 163 74 / 0.12); }
+html[data-theme="dark"] .bg-green-100   { background-color: rgb(22 163 74 / 0.18); }
+html[data-theme="dark"] .bg-yellow-50   { background-color: rgb(202 138 4 / 0.14); }
+html[data-theme="dark"] .bg-yellow-100  { background-color: rgb(202 138 4 / 0.20); }
+html[data-theme="dark"] .bg-red-50      { background-color: rgb(220 38 38 / 0.12); }
+html[data-theme="dark"] .bg-purple-50   { background-color: rgb(168 85 247 / 0.12); }
+html[data-theme="dark"] .bg-purple-100  { background-color: rgb(168 85 247 / 0.18); }
+html[data-theme="dark"] .bg-orange-50   { background-color: rgb(234 88 12 / 0.12); }
+html[data-theme="dark"] .bg-orange-100  { background-color: rgb(234 88 12 / 0.18); }
+html[data-theme="dark"] .bg-pink-50     { background-color: rgb(236 72 153 / 0.12); }
+html[data-theme="dark"] .bg-pink-100    { background-color: rgb(236 72 153 / 0.18); }
+html[data-theme="dark"] .bg-cyan-100    { background-color: rgb(8 145 178 / 0.18); }
+html[data-theme="dark"] .bg-teal-50     { background-color: rgb(13 148 136 / 0.12); }
+html[data-theme="dark"] .bg-teal-100    { background-color: rgb(13 148 136 / 0.18); }
+html[data-theme="dark"] .bg-indigo-50   { background-color: rgb(79 70 229 / 0.12); }
+html[data-theme="dark"] .bg-indigo-100  { background-color: rgb(79 70 229 / 0.18); }
+
+/* Hover utilities baked to bright pastels — without these overrides
+ * hovering an example button lights it up with `--primary-50` and the
+ * dark gray-900 text inside becomes invisible. Flip to subtle dark
+ * tints so the existing text colors keep their contrast. */
+html[data-theme="dark"] .hover\:bg-gray-50:hover     { background-color: var(--surface-hover); }
+html[data-theme="dark"] .hover\:bg-gray-100:hover    { background-color: var(--surface-hover); }
+html[data-theme="dark"] .hover\:bg-primary-50:hover  { background-color: rgb(2 132 199 / 0.18); }
+html[data-theme="dark"] .hover\:bg-primary-100:hover { background-color: rgb(2 132 199 / 0.24); }
+html[data-theme="dark"] .hover\:bg-blue-100:hover    { background-color: rgb(37 99 235 / 0.20); }
+html[data-theme="dark"] .hover\:bg-purple-100:hover  { background-color: rgb(168 85 247 / 0.20); }
+html[data-theme="dark"] .hover\:bg-pink-100:hover    { background-color: rgb(236 72 153 / 0.20); }
+html[data-theme="dark"] .hover\:bg-indigo-100:hover  { background-color: rgb(79 70 229 / 0.20); }
+html[data-theme="dark"] .hover\:bg-orange-100:hover  { background-color: rgb(234 88 12 / 0.20); }
+html[data-theme="dark"] .hover\:bg-teal-100:hover    { background-color: rgb(13 148 136 / 0.20); }
+html[data-theme="dark"] .hover\:bg-green-100:hover   { background-color: rgb(22 163 74 / 0.20); }
+html[data-theme="dark"] .hover\:bg-yellow-100:hover  { background-color: rgb(202 138 4 / 0.20); }
+html[data-theme="dark"] .hover\:bg-red-100:hover     { background-color: rgb(220 38 38 / 0.20); }
+
+/* Text-on-tinted-status colors keep their hue but lighten in dark mode
+ * so they read on the translucent bg-{color}-50/100 backgrounds above.
+ * Includes -700/-800/-900 shades since templates use all three. */
+html[data-theme="dark"] .text-blue-600,
+html[data-theme="dark"] .text-blue-700,
+html[data-theme="dark"] .text-blue-800,
+html[data-theme="dark"] .text-blue-900       { color: #93c5fd; }
+html[data-theme="dark"] .text-green-700,
+html[data-theme="dark"] .text-green-800,
+html[data-theme="dark"] .text-green-900      { color: #86efac; }
+html[data-theme="dark"] .text-yellow-700,
+html[data-theme="dark"] .text-yellow-800,
+html[data-theme="dark"] .text-yellow-900     { color: #fde68a; }
+html[data-theme="dark"] .text-red-600,
+html[data-theme="dark"] .text-red-700,
+html[data-theme="dark"] .text-red-800,
+html[data-theme="dark"] .text-red-900        { color: #fca5a5; }
+html[data-theme="dark"] .text-purple-600,
+html[data-theme="dark"] .text-purple-700,
+html[data-theme="dark"] .text-purple-800,
+html[data-theme="dark"] .text-purple-900     { color: #d8b4fe; }
+html[data-theme="dark"] .text-pink-600,
+html[data-theme="dark"] .text-pink-700,
+html[data-theme="dark"] .text-pink-800,
+html[data-theme="dark"] .text-pink-900       { color: #f9a8d4; }
+html[data-theme="dark"] .text-indigo-600,
+html[data-theme="dark"] .text-indigo-700,
+html[data-theme="dark"] .text-indigo-800,
+html[data-theme="dark"] .text-indigo-900     { color: #a5b4fc; }
+html[data-theme="dark"] .text-orange-600,
+html[data-theme="dark"] .text-orange-700,
+html[data-theme="dark"] .text-orange-800,
+html[data-theme="dark"] .text-orange-900     { color: #fdba74; }
+html[data-theme="dark"] .text-teal-600,
+html[data-theme="dark"] .text-teal-700,
+html[data-theme="dark"] .text-teal-800,
+html[data-theme="dark"] .text-teal-900       { color: #5eead4; }
+html[data-theme="dark"] .text-cyan-600,
+html[data-theme="dark"] .text-cyan-700,
+html[data-theme="dark"] .text-cyan-800,
+html[data-theme="dark"] .text-cyan-900       { color: #67e8f9; }
+html[data-theme="dark"] .text-primary-700    { color: var(--primary-300); }
+
+/* Tinted borders (border-{color}-200/300) blend into the dark surface;
+ * lift them so the upload boxes still read as bordered cards. */
+html[data-theme="dark"] .border-blue-200,    html[data-theme="dark"] .border-blue-300    { border-color: rgb(96 165 250 / 0.40); }
+html[data-theme="dark"] .border-purple-200,  html[data-theme="dark"] .border-purple-300  { border-color: rgb(192 132 252 / 0.40); }
+html[data-theme="dark"] .border-pink-200,    html[data-theme="dark"] .border-pink-300    { border-color: rgb(244 114 182 / 0.40); }
+html[data-theme="dark"] .border-indigo-200,  html[data-theme="dark"] .border-indigo-300  { border-color: rgb(129 140 248 / 0.40); }
+html[data-theme="dark"] .border-orange-200,  html[data-theme="dark"] .border-orange-300  { border-color: rgb(251 146 60 / 0.40); }
+html[data-theme="dark"] .border-teal-200,    html[data-theme="dark"] .border-teal-300    { border-color: rgb(45 212 191 / 0.40); }
+html[data-theme="dark"] .border-cyan-200,    html[data-theme="dark"] .border-cyan-300    { border-color: rgb(34 211 238 / 0.40); }
+html[data-theme="dark"] .border-green-200,   html[data-theme="dark"] .border-green-300   { border-color: rgb(74 222 128 / 0.40); }
+html[data-theme="dark"] .border-yellow-200,  html[data-theme="dark"] .border-yellow-300  { border-color: rgb(250 204 21 / 0.40); }
+html[data-theme="dark"] .border-red-200,     html[data-theme="dark"] .border-red-300     { border-color: rgb(248 113 113 / 0.40); }
+
+/* Gradient utilities — `.from-*` / `.to-*` read raw --{color}-50/100
+ * variables that don't flip in dark mode, so panels using
+ * `bg-gradient-to-r from-blue-50 to-indigo-50` (compound headers, batch
+ * cards, alerts) stay bright. Re-bind those gradient stops to translucent
+ * dark-friendly tints. Status colors keep their hue to preserve meaning. */
+html[data-theme="dark"] .from-blue-50    { --gradient-from: rgb(37 99 235 / 0.14); }
+html[data-theme="dark"] .from-gray-50    { --gradient-from: var(--surface-raised); }
+html[data-theme="dark"] .from-green-50   { --gradient-from: rgb(22 163 74 / 0.14); }
+html[data-theme="dark"] .from-indigo-50  { --gradient-from: rgb(79 70 229 / 0.14); }
+html[data-theme="dark"] .from-orange-50  { --gradient-from: rgb(234 88 12 / 0.14); }
+html[data-theme="dark"] .from-pink-50    { --gradient-from: rgb(236 72 153 / 0.14); }
+html[data-theme="dark"] .from-purple-50  { --gradient-from: rgb(168 85 247 / 0.14); }
+html[data-theme="dark"] .from-teal-50    { --gradient-from: rgb(13 148 136 / 0.14); }
+html[data-theme="dark"] .from-yellow-50  { --gradient-from: rgb(202 138 4 / 0.14); }
+
+html[data-theme="dark"] .to-blue-50      { --gradient-to: rgb(37 99 235 / 0.14); }
+html[data-theme="dark"] .to-blue-100     { --gradient-to: rgb(37 99 235 / 0.20); }
+html[data-theme="dark"] .to-cyan-50      { --gradient-to: rgb(8 145 178 / 0.14); }
+html[data-theme="dark"] .to-green-100    { --gradient-to: rgb(22 163 74 / 0.20); }
+html[data-theme="dark"] .to-indigo-50    { --gradient-to: rgb(79 70 229 / 0.14); }
+html[data-theme="dark"] .to-indigo-100   { --gradient-to: rgb(79 70 229 / 0.20); }
+html[data-theme="dark"] .to-orange-50    { --gradient-to: rgb(234 88 12 / 0.14); }
+html[data-theme="dark"] .to-orange-100   { --gradient-to: rgb(234 88 12 / 0.20); }
+html[data-theme="dark"] .to-pink-100     { --gradient-to: rgb(236 72 153 / 0.20); }
+html[data-theme="dark"] .to-purple-100   { --gradient-to: rgb(168 85 247 / 0.20); }
+html[data-theme="dark"] .to-teal-50      { --gradient-to: rgb(13 148 136 / 0.14); }
+
+/* The Structure Display empty-state card uses bg-gray-50 inside a
+ * bg-white card — without the dark override the inner panel becomes
+ * brighter than its parent and looks like an inverse hole. The
+ * generic .bg-gray-50 override above already flips it; we additionally
+ * darken the structure-display canvas so the molecule SVG (which
+ * carries no light/dark variant of its own) keeps a high-contrast
+ * background. */
+html[data-theme="dark"] #structure-display,
+html[data-theme="dark"] #search-structure {
+  background-color: #ffffff;
 }

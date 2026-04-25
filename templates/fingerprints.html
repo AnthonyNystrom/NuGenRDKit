@@ -3,24 +3,12 @@
 {% block title %}Molecular Fingerprints - NuGenRDKit{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <!-- Page Header -->
-    <div class="mb-8">
-        <div class="flex items-center space-x-3 mb-4">
-            <div class="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg">
-                <i data-lucide="fingerprint" class="w-6 h-6 text-purple-600"></i>
-            </div>
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Molecular Fingerprints</h1>
-                <p class="text-gray-600">Generate and compare molecular fingerprints</p>
-            </div>
-        </div>
-    </div>
-
+{% from "_partials/_tool_page.html" import tool_page %}
+{% call tool_page(title="Fingerprints", icon="fingerprint", description="Morgan / RDKit / MACCS / Avalon and more.", accent="purple") %}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Input Section -->
         <div class="space-y-6">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="card card-body">
                 <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                     <i data-lucide="settings" class="w-5 h-5 mr-2"></i>
                     Fingerprint Generation
@@ -85,12 +73,12 @@
                             <span class="text-sm font-medium text-indigo-900">Batch: Upload molecule file</span>
                         </div>
                         <input type="file"
-                               id="batch-fingerprints-file"
+                               id="batch-fingerprints-file" aria-label="Upload molecule file for batch fingerprints"
                                accept=".smi,.smiles,.sdf,.csv,.txt"
                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                         <div class="mt-2 flex items-center space-x-2">
                             <label class="text-xs text-gray-600">Export as:</label>
-                            <select id="fp-export-format" class="text-xs border-gray-300 rounded px-2 py-1">
+                            <select id="fp-export-format" aria-label="Choose fingerprints export format" class="text-xs border-gray-300 rounded px-2 py-1">
                                 <option value="json">JSON</option>
                                 <option value="csv">CSV</option>
                                 <option value="numpy">NumPy (.npy)</option>
@@ -108,7 +96,7 @@
             </div>
 
             <!-- Quick Examples -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="card card-body">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Examples</h3>
                 <div class="space-y-2">
                     <button class="example-molecule w-full text-left p-3 border border-gray-200 rounded-lg hover:border-primary-200 hover:bg-primary-50 transition-colors" data-smiles="CCO">
@@ -129,7 +117,7 @@
 
         <!-- Results Section -->
         <div class="space-y-6">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="card card-body">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-xl font-semibold text-gray-900 flex items-center">
                         <i data-lucide="bar-chart-2" class="w-5 h-5 mr-2"></i>
@@ -159,7 +147,7 @@
             </div>
 
             <!-- Fingerprint Comparison -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="card card-body">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <i data-lucide="git-branch" class="w-5 h-5 mr-2"></i>
                     Compare Fingerprints
@@ -189,7 +177,7 @@
             </div>
         </div>
     </div>
-</div>
+{% endcall %}
 {% endblock %}
 
 {%- block extra_scripts %}

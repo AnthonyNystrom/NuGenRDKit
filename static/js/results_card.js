@@ -47,6 +47,12 @@
       copyText = "",
       prefix = `${id}-rc`,
       extraTabs = [],
+      // Phase F+: a list of cross-tool destinations the user can send
+      // this molecule to. Either:
+      //   sendTo: ["smiles string"]            ← shorthand: build default list
+      //   sendTo: { smiles: "…", except: [] }  ← shorthand variant
+      //   sendTo: [{label, page, smiles}]      ← explicit
+      sendTo = null,
     } = spec;
 
     const tabs = buildTabs({ summary, details, raw, extraTabs }, prefix);
@@ -73,11 +79,12 @@
     const actions = target.querySelector("[data-rc-actions]");
     if (copyText) appendActionButton(actions, "Copy", "copy", () => copyToClipboard(copyText));
     if (workspaceItem)
-      appendActionButton(actions, "Send to workspace", "save", () => {
+      appendActionButton(actions, "Save", "save", () => {
         if (window.NuGenUtils?.runAction) {
           window.NuGenUtils.runAction("addToWorkspace", [workspaceItem]);
         }
       });
+    if (sendTo) appendSendToMenu(actions, sendTo);
     downloads.forEach((d) => {
       const btn = appendActionButton(actions, d.label || "Download", "download");
       if (d.href) btn.setAttribute("href", d.href);
@@ -200,13 +207,81 @@
 
   function appendActionButton(container, label, icon, onClick) {
     const btn = document.createElement(onClick ? "button" : "a");
-    btn.className =
-      "inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-200 text-gray-700 hover:bg-gray-50";
+    btn.className = "rc-action-btn";
     if (btn.tagName === "BUTTON") btn.type = "button";
     btn.innerHTML = `<i data-lucide="${escape(icon)}" class="w-3 h-3"></i><span>${escape(label)}</span>`;
     if (onClick) btn.addEventListener("click", onClick);
     container.appendChild(btn);
     return btn;
+  }
+
+  // Build the "Send to <tool>" dropdown. `spec` may be a string (the
+  // SMILES) → expand to default destinations, or {smiles, except: [pages]}
+  // shorthand, or an explicit array of {label, page, smiles}.
+  const DEFAULT_SEND_TO = [
+    { label: "Structure",     page: "/structure"    , icon: "box"          },
+    { label: "Descriptors",   page: "/descriptors"  , icon: "bar-chart-3"  },
+    { label: "Fingerprints",  page: "/fingerprints" , icon: "fingerprint"  },
+    { label: "Similarity",    page: "/similarity"   , icon: "search"       },
+    { label: "3D Coords",     page: "/coordinates"  , icon: "orbit"        },
+    { label: "Properties",    page: "/properties"   , icon: "flask-conical"},
+    { label: "Visualization", page: "/visualization", icon: "image"        },
+  ];
+
+  function appendSendToMenu(container, spec) {
+    let smiles, except = [], items = null;
+    if (typeof spec === "string") {
+      smiles = spec;
+    } else if (Array.isArray(spec)) {
+      items = spec;
+    } else if (spec && typeof spec === "object") {
+      smiles = spec.smiles;
+      except = spec.except || [];
+      items = spec.items;
+    }
+    if (!items) {
+      const here = window.location.pathname;
+      items = DEFAULT_SEND_TO
+        .filter((d) => d.page !== here && !except.includes(d.page))
+        .map((d) => ({ ...d, smiles }));
+    }
+    if (!items.length) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "rc-sendto-wrap";
+    wrap.innerHTML = `
+      <button type="button" class="rc-action-btn" aria-haspopup="menu" aria-expanded="false">
+        <i data-lucide="send" class="w-3 h-3"></i><span>Send to</span>
+        <i data-lucide="chevron-down" class="w-3 h-3"></i>
+      </button>
+      <ul class="rc-sendto-menu" role="menu" hidden></ul>
+    `;
+    const trigger = wrap.querySelector("button");
+    const menu = wrap.querySelector(".rc-sendto-menu");
+
+    items.forEach((it) => {
+      const li = document.createElement("li");
+      li.role = "menuitem";
+      const a = document.createElement("a");
+      a.href = it.page + (it.smiles ? `?smiles=${encodeURIComponent(it.smiles)}` : "");
+      a.innerHTML = `<i data-lucide="${escape(it.icon || "arrow-right")}" class="w-3 h-3"></i><span>${escape(it.label)}</span>`;
+      li.appendChild(a);
+      menu.appendChild(li);
+    });
+
+    trigger.addEventListener("click", () => {
+      const open = menu.hidden === false;
+      menu.hidden = open;
+      trigger.setAttribute("aria-expanded", open ? "false" : "true");
+    });
+    // Close on outside click.
+    document.addEventListener("click", (e) => {
+      if (!wrap.contains(e.target)) {
+        menu.hidden = true;
+        trigger.setAttribute("aria-expanded", "false");
+      }
+    });
+    container.appendChild(wrap);
   }
 
   function copyToClipboard(text) {

@@ -1,40 +1,35 @@
 {# ===================================================================
-   _results_panel.html — ResultsCard mount target
-   ===================================================================
-   Pairs with results_card.js. Phase-5 callers do:
+   _results_panel.html — chemist-UI results-card mount target.
+
+   Pairs with results_card.js. Per-page templates do:
 
        {% from "_partials/_results_panel.html" import results_panel %}
        {{ results_panel(id="convertResults", title="Conversion result") }}
 
-   Then in JS:
+   Then in the page's JS module:
 
        ResultsCard.mount("convertResults", {
            title: "Canonical SMILES",
            summary: "<code>CCO</code>",
            details: tableHtml,
            raw: JSON.stringify(payload, null, 2),
-           downloads: [{ label: "Download JSON", href: "..." }],
            workspaceItem: { type: "smiles", value: "CCO", name: "Ethanol" },
        });
 
-   The empty-state DOM that ships from Jinja becomes the placeholder
-   shown before any tool action runs; results_card.js replaces it on
-   mount(). Empty / loading / error states are first-class methods on
-   the JS API. #}
+   The empty placeholder ships from Jinja so the panel isn't blank
+   on first paint; results_card.js replaces it on mount(). Phase F
+   gives it an example-by-default treatment.
+#}
 
-{% macro results_panel(id, title="Results", icon="bar-chart-2", empty_message="Results will appear here after you run a tool.") %}
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-    <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-        <i data-lucide="{{ icon }}" class="w-5 h-5 mr-2"></i>
-        {{ title }}
-    </h2>
-
-    {# ResultsCard.mount() replaces the contents of #<id>. The empty
-       block below provides a friendly placeholder for first paint. #}
-    <div id="{{ id }}" class="space-y-4" data-results-card>
-        <div class="rc-empty text-center py-12">
-            <i data-lucide="inbox" class="w-12 h-12 mx-auto text-gray-300 mb-3"></i>
-            <p class="text-sm text-gray-500">{{ empty_message }}</p>
+{% macro results_panel(id, title="Results", icon="bar-chart-2", empty_message="Results will appear here after you run the tool.") %}
+<div class="card">
+    <div class="card-header">
+        <h2><i data-lucide="{{ icon }}" class="w-4 h-4"></i> {{ title }}</h2>
+    </div>
+    <div id="{{ id }}" class="card-body" data-results-card>
+        <div class="rc-empty">
+            <i data-lucide="inbox" class="rc-empty-icon"></i>
+            <p>{{ empty_message }}</p>
         </div>
     </div>
 </div>

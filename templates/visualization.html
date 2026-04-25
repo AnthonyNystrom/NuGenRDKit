@@ -3,24 +3,12 @@
 {% block title %}Molecular Visualization - NuGenRDKit{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <!-- Page Header -->
-    <div class="mb-8">
-        <div class="flex items-center space-x-3 mb-4">
-            <div class="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-lg">
-                <i data-lucide="image" class="w-6 h-6 text-indigo-600"></i>
-            </div>
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Molecular Visualization</h1>
-                <p class="text-gray-600">Create publication-quality molecular graphics and interactive views</p>
-            </div>
-        </div>
-    </div>
-
+{% from "_partials/_tool_page.html" import tool_page %}
+{% call tool_page(title="Visualization", icon="image", description="Publication-quality molecule + reaction graphics.", accent="indigo") %}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Input Section -->
         <div class="lg:col-span-1">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
+            <div class="card card-body sticky top-24">
                 <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                     <i data-lucide="palette" class="w-5 h-5 mr-2"></i>
                     Visualization Settings
@@ -264,12 +252,12 @@ c1ccccc1,c1cccnc1,c1ccoc1</textarea>
                             <span class="text-sm font-medium text-indigo-900">Batch: Upload molecule file</span>
                         </div>
                         <input type="file"
-                               id="batch-viz-file"
+                               id="batch-viz-file" aria-label="Upload molecule file for batch visualization"
                                accept=".smi,.smiles,.sdf,.csv,.txt"
                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                         <div class="mt-2 flex items-center space-x-2">
                             <label class="text-xs text-gray-600">Output:</label>
-                            <select id="viz-batch-format" class="text-xs border-gray-300 rounded px-2 py-1">
+                            <select id="viz-batch-format" aria-label="Choose batch visualization output format" class="text-xs border-gray-300 rounded px-2 py-1">
                                 <option value="grid">Image Grid</option>
                                 <option value="zip">ZIP Archive</option>
                             </select>
@@ -347,7 +335,7 @@ c1ccccc1,c1cccnc1,c1ccoc1</textarea>
         <div class="lg:col-span-2">
             <div class="space-y-6">
                 <!-- Main Visualization -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-semibold text-gray-900 flex items-center">
                             <i data-lucide="monitor" class="w-5 h-5 mr-2"></i>
@@ -372,7 +360,7 @@ c1ccccc1,c1cccnc1,c1ccoc1</textarea>
                 </div>
 
                 <!-- Molecular Information -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <i data-lucide="info" class="w-5 h-5 mr-2"></i>
                         Molecular Information
@@ -389,7 +377,7 @@ c1ccccc1,c1cccnc1,c1ccoc1</textarea>
                 </div>
 
                 <!-- Visualization Gallery -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-gray-900 flex items-center">
                             <i data-lucide="grid" class="w-5 h-5 mr-2"></i>
@@ -413,7 +401,7 @@ c1ccccc1,c1cccnc1,c1ccoc1</textarea>
             </div>
         </div>
     </div>
-</div>
+{% endcall %}
 {% endblock %}
 
 {% block extra_head %}
@@ -444,8 +432,11 @@ c1ccccc1,c1cccnc1,c1ccoc1</textarea>
 {% endblock %}
 
 {% block page_scripts %}
-{# Phase 5: 3Dmol.js (~500 KB) is loaded only on pages that use it. #}
-<script src="https://cdn.jsdelivr.net/npm/3dmol@2.0.4/build/3Dmol.js"
+{# Phase 5: 3Dmol.js (~500 KB) is loaded only on pages that use it.
+   `defer` so the parser doesn't block on the network fetch — visualization.js
+   is also `defer`, so execution order between them is preserved. #}
+<script defer
+        src="https://cdn.jsdelivr.net/npm/3dmol@2.0.4/build/3Dmol.js"
         integrity="sha384-HfGnTso7wAgbnVQLKG4WfRvctoBn62U8In3+aSGVEqldjWZJ4vNpfOWuNFiqeNFk"
         crossorigin="anonymous"></script>
 {% endblock %}

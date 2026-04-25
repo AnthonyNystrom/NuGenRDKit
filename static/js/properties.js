@@ -51,6 +51,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = this.getAttribute('data-name');
             document.getElementById('property-input').value = smiles;
             analyzeProperties();
+            document.getElementById('property-results')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
     
@@ -119,7 +121,8 @@ async function analyzeProperties() {
             displayProperties(data, smiles, analysisType);
             loadMolecularStructure(smiles);
             enableExportButtons();
-            
+            window.Recent?.add({ smiles, page: '/properties' });
+
             statusSpan.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
             statusSpan.textContent = 'Complete';
             

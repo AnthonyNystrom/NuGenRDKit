@@ -110,6 +110,21 @@
     write([]);
   }
 
+  /**
+   * Reorder the workspace by moving the item at `fromIndex` to `toIndex`.
+   * Indices are clamped; out-of-range moves no-op.
+   */
+  function reorder(fromIndex, toIndex) {
+    const items = read();
+    if (fromIndex < 0 || fromIndex >= items.length) return false;
+    const target = Math.max(0, Math.min(items.length - 1, toIndex));
+    if (target === fromIndex) return false;
+    const [moved] = items.splice(fromIndex, 1);
+    items.splice(target, 0, moved);
+    write(items);
+    return true;
+  }
+
   function onChange(cb) {
     if (typeof cb !== "function") return () => {};
     subscribers.add(cb);
@@ -154,6 +169,7 @@
       <header class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
         <h2 class="text-sm font-semibold text-gray-900">Workspace</h2>
         <div class="flex items-center space-x-2">
+          <button type="button" data-action="copyAllWorkspace" class="text-xs text-gray-500 hover:text-primary-700" title="Copy all SMILES (one per line)">Copy all</button>
           <button type="button" data-action="clearWorkspace" class="text-xs text-gray-500 hover:text-red-600">Clear</button>
           <button type="button" data-action="toggleWorkspace" aria-label="Close workspace" class="text-gray-500 hover:text-gray-900">
             <i data-lucide="x" class="w-5 h-5"></i>
@@ -171,6 +187,83 @@
     return drawer;
   }
 
+  // -------------------------------------------------------------------- //
+  // Per-row utility: load SMILES into current page's input, copy, send-to.
+  // The PAGE_INPUT map mirrors workspace_save.js / library_picker.js so
+  // every page that surfaces a "Save" button also accepts a load-back.
+  // -------------------------------------------------------------------- //
+
+  const PAGE_INPUT = {
+    "/":              "global-search",
+    "/structure":     "structure-input",
+    "/descriptors":   "descriptor-input",
+    "/fingerprints":  "fingerprint-input",
+    "/similarity":    "query-molecule",
+    "/coordinates":   "coordinate-input",
+    "/properties":    "property-input",
+    "/visualization": "viz-input",
+  };
+
+  const SEND_TO_DESTINATIONS = [
+    { label: "Structure",     page: "/structure"    , icon: "box"          },
+    { label: "Descriptors",   page: "/descriptors"  , icon: "bar-chart-3"  },
+    { label: "Fingerprints",  page: "/fingerprints" , icon: "fingerprint"  },
+    { label: "Similarity",    page: "/similarity"   , icon: "search"       },
+    { label: "3D Coords",     page: "/coordinates"  , icon: "orbit"        },
+    { label: "Properties",    page: "/properties"   , icon: "flask-conical"},
+    { label: "Visualization", page: "/visualization", icon: "image"        },
+  ];
+
+  function loadIntoCurrentPage(item) {
+    const inputId = PAGE_INPUT[window.location.pathname];
+    const el = inputId ? document.getElementById(inputId) : null;
+    if (!el) {
+      // No primary input on this page (e.g. /reactions) — fall back to
+      // sending the user to /structure with the SMILES pre-filled.
+      window.location.href = `/structure?smiles=${encodeURIComponent(item.value)}`;
+      return;
+    }
+    el.value = item.value;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    el.focus();
+    if (window.NuGenUtils?.showAlert) {
+      window.NuGenUtils.showAlert(`Loaded ${item.name || item.value}`, "success", 1800);
+    }
+  }
+
+  async function copyItem(item) {
+    if (!navigator.clipboard) {
+      window.NuGenUtils?.showAlert("Clipboard not available", "error", 2500);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(item.value);
+      window.NuGenUtils?.showAlert("Copied SMILES", "success", 1500);
+    } catch {
+      window.NuGenUtils?.showAlert("Clipboard write blocked", "error", 2500);
+    }
+  }
+
+  function buildSendToMenu(item) {
+    const here = window.location.pathname;
+    const escape = window.NuGenUtils?.escapeHtml || ((s) => s);
+    const links = SEND_TO_DESTINATIONS
+      .filter((d) => d.page !== here)
+      .map(
+        (d) => `
+          <li role="menuitem">
+            <a href="${d.page}?smiles=${encodeURIComponent(item.value)}"
+               class="ws-sendto-link">
+              <i data-lucide="${escape(d.icon)}" class="w-3 h-3"></i>
+              <span>${escape(d.label)}</span>
+            </a>
+          </li>`
+      )
+      .join("");
+    return `<ul class="ws-sendto-menu" role="menu" hidden>${links}</ul>`;
+  }
+
   function renderList(items) {
     if (!drawer) return;
     const listEl = drawer.querySelector("#nug-workspace-list");
@@ -181,23 +274,33 @@
       return;
     }
     emptyEl.classList.add("hidden");
+    const escape = window.NuGenUtils?.escapeHtml || ((s) => s);
     listEl.innerHTML = items
-      .map((item) => {
-        const escape = window.NuGenUtils?.escapeHtml || ((s) => s);
+      .map((item, idx) => {
         const label = item.name ? escape(item.name) : escape(item.value);
         const sub = item.name ? escape(item.value) : escape(item.type || "");
         return `
-          <article class="px-4 py-3 hover:bg-gray-50">
-            <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-gray-900 truncate">${label}</p>
-                <p class="text-xs text-gray-500 font-mono truncate">${sub}</p>
-              </div>
-              <button type="button"
-                      data-action="removeWorkspaceItem"
-                      data-action-args='[${JSON.stringify(item.id)}]'
-                      aria-label="Remove"
-                      class="text-gray-400 hover:text-red-600">
+          <article class="nug-workspace-item"
+                   draggable="true"
+                   data-index="${idx}"
+                   data-id="${escape(item.id)}"
+                   title="Click to load into current page">
+            <span class="ws-drag-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</span>
+            <div class="ws-row-body">
+              <p class="ws-row-name">${label}</p>
+              <p class="ws-row-sub">${sub}</p>
+            </div>
+            <div class="ws-row-actions">
+              <button type="button" class="ws-act ws-act-copy" aria-label="Copy SMILES" data-tooltip="Copy SMILES">
+                <i data-lucide="clipboard" class="w-4 h-4"></i>
+              </button>
+              <span class="ws-sendto-wrap">
+                <button type="button" class="ws-act ws-act-sendto" aria-haspopup="menu" aria-expanded="false" aria-label="Send to other tool" data-tooltip="Send to…">
+                  <i data-lucide="send" class="w-4 h-4"></i>
+                </button>
+                ${buildSendToMenu(item)}
+              </span>
+              <button type="button" class="ws-act ws-act-remove" aria-label="Remove" data-tooltip="Remove">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </div>
@@ -207,6 +310,98 @@
     if (window.lucide && typeof window.lucide.createIcons === "function") {
       window.lucide.createIcons();
     }
+    wireRowActions(listEl, items);
+    wireDrag(listEl);
+  }
+
+  function wireRowActions(listEl, items) {
+    listEl.querySelectorAll(".nug-workspace-item").forEach((row) => {
+      const idx = parseInt(row.dataset.index, 10);
+      const item = items[idx];
+      if (!item) return;
+
+      // Click anywhere on the body / name → load into current page.
+      const body = row.querySelector(".ws-row-body");
+      if (body) {
+        body.addEventListener("click", (e) => {
+          e.stopPropagation();
+          loadIntoCurrentPage(item);
+        });
+      }
+
+      // Copy
+      const copyBtn = row.querySelector(".ws-act-copy");
+      if (copyBtn) {
+        copyBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          copyItem(item);
+        });
+      }
+
+      // Remove
+      const removeBtn = row.querySelector(".ws-act-remove");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          remove(item.id);
+        });
+      }
+
+      // Send-to dropdown
+      const sendBtn = row.querySelector(".ws-act-sendto");
+      const menu = row.querySelector(".ws-sendto-menu");
+      if (sendBtn && menu) {
+        sendBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          // Close any other open menus first.
+          listEl.querySelectorAll(".ws-sendto-menu").forEach((m) => {
+            if (m !== menu) m.hidden = true;
+          });
+          listEl.querySelectorAll(".ws-act-sendto").forEach((b) => {
+            if (b !== sendBtn) b.setAttribute("aria-expanded", "false");
+          });
+          menu.hidden = !menu.hidden;
+          sendBtn.setAttribute("aria-expanded", menu.hidden ? "false" : "true");
+        });
+      }
+    });
+  }
+
+  // Document-level click closes any open send-to menu.
+  document.addEventListener("click", () => {
+    if (!drawer) return;
+    drawer.querySelectorAll(".ws-sendto-menu").forEach((m) => (m.hidden = true));
+    drawer.querySelectorAll(".ws-act-sendto").forEach((b) => b.setAttribute("aria-expanded", "false"));
+  });
+
+  function wireDrag(listEl) {
+    let dragIdx = null;
+    listEl.querySelectorAll(".nug-workspace-item").forEach((el) => {
+      el.addEventListener("dragstart", (e) => {
+        dragIdx = parseInt(el.dataset.index, 10);
+        el.classList.add("opacity-50");
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", String(dragIdx));
+        }
+      });
+      el.addEventListener("dragend", () => {
+        el.classList.remove("opacity-50");
+        dragIdx = null;
+      });
+      el.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      });
+      el.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const targetIdx = parseInt(el.dataset.index, 10);
+        const fromIdx = dragIdx ?? parseInt(e.dataTransfer?.getData("text/plain") || "-1", 10);
+        if (Number.isFinite(fromIdx) && Number.isFinite(targetIdx)) {
+          reorder(fromIdx, targetIdx);
+        }
+      });
+    });
   }
 
   function toggleDrawer() {
@@ -237,6 +432,23 @@
         2500
       );
     });
+    window.NuGenUtils.registerAction("copyAllWorkspace", async () => {
+      const items = list();
+      if (items.length === 0) {
+        window.NuGenUtils.showAlert("Workspace is empty", "info", 2000);
+        return;
+      }
+      const text = items
+        .filter((i) => (i.type || "smiles") === "smiles" && i.value)
+        .map((i) => i.value)
+        .join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        window.NuGenUtils.showAlert(`Copied ${items.length} SMILES to clipboard`, "success", 2500);
+      } catch {
+        window.NuGenUtils.showAlert("Clipboard write blocked by browser", "error", 3000);
+      }
+    });
     if (window.NuGenUtils.shortcuts) {
       window.NuGenUtils.shortcuts.add("g+w", toggleDrawer, "Toggle workspace");
     }
@@ -249,6 +461,7 @@
     remove,
     count,
     clear,
+    reorder,
     onChange,
     fillInto,
   };

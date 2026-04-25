@@ -1,35 +1,73 @@
 {# ===================================================================
-   _sidebar.html — alternative left-rail navigation (Phase-4 stub)
-   ===================================================================
-   Not currently included by base.html. The active layout uses the
-   topbar (_topbar.html) for nav. This partial exists so a future
-   redesign can switch to a sidebar layout without rewriting the
-   nav catalog.
+   _sidebar.html — Phase B chemist-UI shell.
 
-   Same nav items, same active-state logic. Width: 220px when shown.
-#}
+   220-px persistent left rail. Sections (top → bottom):
+     1. Tools — 9 lucide-iconed nav links, active state highlights
+        the current request.endpoint
+     2. Workspace mini — count + "Open" link to drawer (drawer UI is
+        owned by static/js/workspace.js)
+     3. Recent molecules — populated by Phase E (static/js/recent.js)
 
-<aside class="hidden lg:block bg-white border-r border-gray-200 w-56 shadow-sm" aria-label="Tool navigation">
-    <nav class="p-4 space-y-1">
+   Mobile (<1024 px): hidden by default; sidebar-toggle in the topbar
+   adds .is-open which overlays it on top of the page.
+=================================================================== #}
+
+<aside id="app-sidebar" class="sidebar" aria-label="Tool navigation">
+    <nav class="sidebar-section sidebar-tools" aria-label="Tools">
+        <p class="sidebar-section-title">Tools</p>
         {% set nav_items = [
-            ('index', 'Home', 'home'),
-            ('structure', 'Structure', 'box'),
-            ('descriptors', 'Descriptors', 'bar-chart-3'),
-            ('fingerprints', 'Fingerprints', 'fingerprint'),
-            ('similarity', 'Similarity', 'search'),
-            ('coordinates', '3D Coords', 'box'),
-            ('properties', 'Properties', 'flask-conical'),
-            ('reactions', 'Reactions', 'zap'),
+            ('index',         'Home',          'home'),
+            ('structure',     'Structure',     'box'),
+            ('descriptors',   'Descriptors',   'bar-chart-3'),
+            ('fingerprints',  'Fingerprints',  'fingerprint'),
+            ('similarity',    'Similarity',    'search'),
+            ('coordinates',   '3D Coords',     'orbit'),
+            ('properties',    'Properties',    'flask-conical'),
+            ('reactions',     'Reactions',     'zap'),
             ('visualization', 'Visualization', 'image')
         ] %}
-        {% for route, name, icon in nav_items %}
-            <a href="{{ url_for(route) }}"
-               class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                      {% if request.endpoint == route %}text-primary-600 bg-primary-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-100{% endif %}"
-               {% if request.endpoint == route %}aria-current="page"{% endif %}>
-                <i data-lucide="{{ icon }}" class="w-4 h-4 flex-shrink-0"></i>
-                <span>{{ name }}</span>
-            </a>
-        {% endfor %}
+        <ul class="sidebar-nav">
+            {% for route, name, icon in nav_items %}
+                {% set is_active = (request.endpoint == route) %}
+                <li>
+                    <a href="{{ url_for(route) }}"
+                       class="sidebar-link{% if is_active %} is-active{% endif %}"
+                       {% if is_active %}aria-current="page"{% endif %}>
+                        <i data-lucide="{{ icon }}" class="sidebar-link-icon"></i>
+                        <span>{{ name }}</span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
     </nav>
+
+    <section class="sidebar-section" aria-label="Workspace">
+        <p class="sidebar-section-title">Workspace</p>
+        <button type="button"
+                class="sidebar-workspace"
+                data-action="toggleWorkspace"
+                aria-label="Open workspace">
+            <i data-lucide="briefcase" class="sidebar-link-icon"></i>
+            <span>Open</span>
+            <span id="sidebar-workspace-count" class="sidebar-count" hidden>0</span>
+        </button>
+    </section>
+
+    <section class="sidebar-section" aria-label="Recent molecules">
+        <p class="sidebar-section-title">Recent</p>
+        <ul id="sidebar-recent" class="sidebar-recent">
+            <li class="sidebar-recent-empty">No recent molecules.</li>
+        </ul>
+    </section>
+
+    <section class="sidebar-section sidebar-footer" aria-label="Resources">
+        <a href="/api/v1/docs" class="sidebar-footer-link">
+            <i data-lucide="book-open" class="sidebar-link-icon"></i>
+            <span>API docs</span>
+        </a>
+        <a href="/health" class="sidebar-footer-link">
+            <i data-lucide="activity" class="sidebar-link-icon"></i>
+            <span>Health</span>
+        </a>
+    </section>
 </aside>

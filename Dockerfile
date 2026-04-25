@@ -46,12 +46,19 @@ RUN pip install --upgrade pip wheel \
 # --- Stage 2: runtime -------------------------------------------------------
 FROM python:${PYTHON_VERSION}-slim AS runtime
 
+# `.dockerignore` strips the `.git` directory from the build context, so
+# the runtime container has no way to derive the commit SHA at request
+# time. Pass `--build-arg GIT_SHA=$(git rev-parse HEAD)` (or the CI's
+# ${{ github.sha }}) to bake the deploying commit into /health output.
+ARG GIT_SHA=""
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     LOG_LEVEL=INFO \
     FLASK_ENV=production \
     HOST=0.0.0.0 \
     PORT=8000 \
+    GIT_SHA=${GIT_SHA} \
     PATH="/opt/venv/bin:${PATH}"
 
 # Runtime libraries that the wheels link against (no compilers).

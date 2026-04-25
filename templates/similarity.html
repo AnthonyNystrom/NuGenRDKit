@@ -3,24 +3,12 @@
 {% block title %}Similarity & Search - NuGenRDKit{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <!-- Page Header -->
-    <div class="mb-8">
-        <div class="flex items-center space-x-3 mb-4">
-            <div class="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-lg">
-                <i data-lucide="search" class="w-6 h-6 text-orange-600"></i>
-            </div>
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Similarity & Search</h1>
-                <p class="text-gray-600">Calculate molecular similarity and perform substructure searches</p>
-            </div>
-        </div>
-    </div>
-
+{% from "_partials/_tool_page.html" import tool_page %}
+{% call tool_page(title="Similarity", icon="search", description="13 metrics + bulk search + substructure + diversity.", accent="orange") %}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Input Section -->
         <div class="lg:col-span-1">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
+            <div class="card card-body sticky top-24">
                 <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                     <i data-lucide="git-branch" class="w-5 h-5 mr-2"></i>
                     Similarity Calculation
@@ -56,7 +44,7 @@
                             <span class="text-sm font-medium text-green-900">Bulk Similarity: Upload target molecules</span>
                         </div>
                         <input type="file"
-                               id="bulk-similarity-file"
+                               id="bulk-similarity-file" aria-label="Upload target molecules for bulk similarity"
                                accept=".smi,.smiles,.sdf,.csv,.txt"
                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
                         <p class="text-xs text-gray-600 mt-1">Compare query vs. file of molecules (.smi, .sdf, .csv - max 50 MB)</p>
@@ -145,7 +133,7 @@ CCO</textarea>
                                 <span class="text-sm font-medium text-blue-900">Or upload a file</span>
                             </div>
                             <input type="file"
-                                   id="substructure-file-upload"
+                                   id="substructure-file-upload" aria-label="Upload molecule file for substructure search"
                                    accept=".smi,.smiles,.sdf,.csv,.txt"
                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                             <p class="text-xs text-gray-600 mt-1">Formats: .smi, .sdf, .csv (max 50 MB, 10k molecules)</p>
@@ -174,7 +162,7 @@ CCO</textarea>
                                 <span class="text-sm font-medium text-purple-900">Upload molecule library</span>
                             </div>
                             <input type="file"
-                                   id="diverse-subset-file-upload"
+                                   id="diverse-subset-file-upload" aria-label="Upload molecule file for diverse subset selection"
                                    accept=".smi,.smiles,.sdf,.csv,.txt"
                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
                             <p class="text-xs text-gray-600 mt-1">Upload library to pick diverse subset (.smi, .sdf, .csv - max 50 MB)</p>
@@ -237,7 +225,7 @@ CCO</textarea>
         <div class="lg:col-span-2">
             <div class="space-y-6">
                 <!-- Similarity Results -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                         <i data-lucide="chart-pie" class="w-5 h-5 mr-2"></i>
                         Similarity Results
@@ -255,7 +243,7 @@ CCO</textarea>
                 </div>
 
                 <!-- Molecular Structures Display -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <i data-lucide="eye" class="w-5 h-5 mr-2"></i>
                         Molecular Structures
@@ -278,7 +266,7 @@ CCO</textarea>
                 </div>
 
                 <!-- Substructure Search Results -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                         <i data-lucide="target" class="w-5 h-5 mr-2"></i>
                         Substructure Search Results
@@ -295,7 +283,7 @@ CCO</textarea>
                 </div>
 
                 <!-- Diverse Subset Results -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                         <i data-lucide="grid" class="w-5 h-5 mr-2"></i>
                         Diverse Subset Selection Results
@@ -313,7 +301,7 @@ CCO</textarea>
             </div>
         </div>
     </div>
-</div>
+{% endcall %}
 {% endblock %}
 
 {%- block extra_scripts %}

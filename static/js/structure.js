@@ -38,6 +38,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const smiles = this.getAttribute('data-smiles');
             document.getElementById('structure-input').value = smiles;
             convertStructure();
+            // Examples often sit deep in the input column. Scroll the
+            // result panel into view so the user sees the loading state
+            // (and then the result) instead of staring at the button.
+            document.getElementById('structure-display')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
 
@@ -157,6 +162,7 @@ async function convertStructure() {
             displayResult(data, format);
             // Store the result globally for quick links
             window.lastStructureData = data;
+            window.Recent?.add({ smiles, page: '/structure' });
         } else {
             showAlert(data.error || 'Conversion failed', 'danger');
         }

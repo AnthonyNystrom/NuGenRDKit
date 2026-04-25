@@ -195,13 +195,24 @@
   // Modal helpers (paired with templates/_partials/_modal.html)
   // ==========================================================================
 
-  function openModal({ title = "", body = "", buttons = [] } = {}) {
+  function openModal({ title = "", body = "", buttons = [], size = "md" } = {}) {
     const dialog = document.getElementById("app-modal");
     if (!dialog) {
       // Caller hasn't included _modal.html on this page; fall back to alert.
       showAlert(`${title ? title + ": " : ""}${typeof body === "string" ? body : ""}`, "info");
       return;
     }
+    // Size dial — swap the dialog's max-width class. md is the default
+    // 32rem from _modal.html; "lg" widens to 48rem for richer pickers
+    // (library picker, multi-pane settings, etc.).
+    const sizeClass = ({
+      sm: "max-w-md",
+      md: "max-w-lg",
+      lg: "max-w-3xl",
+      xl: "max-w-4xl",
+    })[size] || "max-w-lg";
+    ["max-w-md","max-w-lg","max-w-3xl","max-w-4xl"].forEach((c) => dialog.classList.remove(c));
+    dialog.classList.add(sizeClass);
     document.getElementById("app-modal-title").textContent = title;
     const bodyEl = document.getElementById("app-modal-body");
     bodyEl.innerHTML = "";
@@ -428,7 +439,81 @@
       gArmed = true;
       clearTimeout(gTimer);
       gTimer = setTimeout(() => (gArmed = false), 1500);
+      return;
     }
+    // Phase E: Linear / Slack pattern — typing any printable letter
+    // outside of an input opens the topbar search palette and
+    // pre-fills the typed character. Only fires when no modifier
+    // is held and the topbar search exists on the page.
+    if (
+      e.key.length === 1 &&
+      /^[a-z0-9]$/i.test(e.key) &&
+      !e.metaKey && !e.ctrlKey && !e.altKey
+    ) {
+      const topbarInput = document.getElementById("topbar-search-input");
+      if (topbarInput) {
+        e.preventDefault();
+        topbarInput.value = e.key;
+        topbarInput.focus();
+        topbarInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }
+  });
+
+  // ==========================================================================
+  // Sortable tables (data-sort-by on <th> elements)
+  //
+  // Templates opt in by emitting:
+  //   <th data-sort-by="numeric">MW</th>     numeric (font-variant tabular-nums)
+  //   <th data-sort-by="text">Name</th>      lexicographic
+  //   <th data-sort-by="date">Added</th>     ISO date / timestamp
+  // Click toggles asc / desc; the sort-direction goes onto the th
+  // so the CSS `::after` arrow renders.
+  // ==========================================================================
+
+  document.addEventListener("click", (e) => {
+    const th = e.target.closest("th[data-sort-by]");
+    if (!th) return;
+    const table = th.closest("table");
+    if (!table) return;
+
+    const headerRow = th.parentElement;
+    const headers = Array.from(headerRow.children);
+    const idx = headers.indexOf(th);
+    const kind = th.getAttribute("data-sort-by");
+    const currentDir = th.getAttribute("data-sort-direction");
+    const nextDir = currentDir === "asc" ? "desc" : "asc";
+
+    // Clear other headers' indicators.
+    headers.forEach((h) => h.removeAttribute("data-sort-direction"));
+    th.setAttribute("data-sort-direction", nextDir);
+
+    const tbody = table.tBodies[0];
+    if (!tbody) return;
+    const rows = Array.from(tbody.rows);
+
+    function valueOf(row) {
+      const cell = row.cells[idx];
+      if (!cell) return null;
+      const raw = (cell.dataset.sortValue ?? cell.textContent ?? "").trim();
+      if (kind === "numeric") return parseFloat(raw);
+      if (kind === "date") return Date.parse(raw) || 0;
+      return raw.toLowerCase();
+    }
+
+    rows.sort((a, b) => {
+      const va = valueOf(a);
+      const vb = valueOf(b);
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (va < vb) return nextDir === "asc" ? -1 : 1;
+      if (va > vb) return nextDir === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    const frag = document.createDocumentFragment();
+    rows.forEach((r) => frag.appendChild(r));
+    tbody.appendChild(frag);
   });
 
   // ==========================================================================

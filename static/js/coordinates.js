@@ -49,6 +49,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const smiles = this.getAttribute('data-smiles');
             document.getElementById('coordinate-input').value = smiles;
             generateCoordinates();
+            document.getElementById('coordinate-viewer')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
     
@@ -256,6 +258,7 @@ async function generateCoordinates() {
             displayCoordinates(data, displaySmiles, coordType);
             enableExportButtons();
             window.lastCoordinateData = data; // Store for export
+            window.Recent?.add({ smiles: displaySmiles, page: '/coordinates' });
         } else {
             showAlert(data.error || 'Coordinate generation failed', 'danger');
             resetViewer();
@@ -1022,23 +1025,24 @@ function initCoordinate3DViewer(coords, conformers = null) {
             styleConfig = {stick: {radius: 0.15}, sphere: {radius: 0.3}};
         }
         
-        // Apply color scheme
+        // 3Dmol's `colorscheme` field wants a built-in scheme NAME
+        // (string), not the elementColors lookup object — passing the
+        // object yields "Could not interpret colorscheme [object Object]".
         let colors;
         switch (colorScheme) {
             case 'rainbow':
-                colors = $3Dmol.elementColors.rasmol;
+                colors = 'rasmol';
                 break;
             case 'uniform':
-                colors = {default: 'white'};
+                colors = { prop: 'elem', map: { default: 'white' } };
                 break;
             case 'depth':
-                colors = $3Dmol.elementColors.greenCarbon;
+                colors = 'greenCarbon';
                 break;
             default:
-                colors = $3Dmol.elementColors.Jmol;
+                colors = 'Jmol';
         }
-        
-        // Apply colors to style config
+
         Object.keys(styleConfig).forEach(key => {
             styleConfig[key].colorscheme = colors;
         });
@@ -1621,49 +1625,36 @@ function updateCoordinate3DStyle(style) {
         styleConfig = {stick: {radius: 0.15}, sphere: {radius: 0.3}};
     }
     
-    // Apply current color scheme
+    // 3Dmol's `colorscheme` field expects a built-in scheme NAME (string),
+    // not the elementColors lookup object — see updateCoordinate3DStyle for
+    // the same fix at the other entry point.
     const colorScheme = document.getElementById('color-scheme')?.value || 'element';
     let colors;
     switch (colorScheme) {
-        case 'rainbow':
-            colors = $3Dmol.elementColors.rasmol;
-            break;
-        case 'uniform':
-            colors = {default: 'white'};
-            break;
-        case 'depth':
-            colors = $3Dmol.elementColors.greenCarbon;
-            break;
-        default:
-            colors = $3Dmol.elementColors.Jmol;
+        case 'rainbow':  colors = 'rasmol'; break;
+        case 'uniform':  colors = { prop: 'elem', map: { default: 'white' } }; break;
+        case 'depth':    colors = 'greenCarbon'; break;
+        default:         colors = 'Jmol';
     }
-    
+
     Object.keys(styleConfig).forEach(key => {
         styleConfig[key].colorscheme = colors;
     });
-    
+
     viewer.setStyle({}, styleConfig);
     viewer.render();
 }
 
 function updateCoordinate3DColor(colorScheme) {
     if (!window.currentCoordinateViewer) return;
-    
     const viewer = window.currentCoordinateViewer;
-    
+
     let colors;
     switch (colorScheme) {
-        case 'rainbow':
-            colors = $3Dmol.elementColors.rasmol;
-            break;
-        case 'uniform':
-            colors = {default: 'white'};
-            break;
-        case 'depth':
-            colors = $3Dmol.elementColors.greenCarbon;
-            break;
-        default:
-            colors = $3Dmol.elementColors.Jmol;
+        case 'rainbow':  colors = 'rasmol'; break;
+        case 'uniform':  colors = { prop: 'elem', map: { default: 'white' } }; break;
+        case 'depth':    colors = 'greenCarbon'; break;
+        default:         colors = 'Jmol';
     }
     
     // Get current style

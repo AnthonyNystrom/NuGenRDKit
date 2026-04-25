@@ -36,15 +36,24 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('query-molecule').value = query;
             document.getElementById('target-molecule').value = target;
             calculateSimilarity();
+            // The Quick Examples panel sits at the bottom of the input
+            // column; the result panel renders in the right column near
+            // the top. Without this scroll the user clicks an example
+            // and thinks nothing happened — the answer is just out of
+            // their viewport.
+            document.getElementById('similarity-results')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
-    
+
     // Example substructure handlers
     document.querySelectorAll('.example-substructure').forEach(button => {
         button.addEventListener('click', function() {
             const pattern = this.getAttribute('data-pattern');
             document.getElementById('substructure-pattern').value = pattern;
             searchSubstructure();
+            document.getElementById('similarity-results')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
     
@@ -95,6 +104,8 @@ async function calculateSimilarity() {
         if (data.success) {
             displaySimilarityResults(data, querySmiles, targetSmiles, metric);
             loadMolecularStructures(querySmiles, targetSmiles);
+            window.Recent?.add({ smiles: querySmiles, page: '/similarity' });
+            window.Recent?.add({ smiles: targetSmiles, page: '/similarity' });
         } else {
             showAlert(data.error || 'Similarity calculation failed', 'danger');
         }
@@ -422,40 +433,47 @@ function displayBulkSimilarityResults(data, querySmiles) {
             </div>
         </div>
 
-        <div class="space-y-3 max-h-96 overflow-y-auto">
-            ${results.slice(0, 50).map(result => `
-                <div class="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-sm transition-all">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex-1">
-                            <h4 class="font-medium text-gray-900">${result.name}</h4>
-                            <code class="text-xs text-gray-600 break-all">${result.target_smiles}</code>
-                        </div>
-                        <div class="ml-4">
-                            ${result.similarity !== null ? `
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                    result.similarity >= 0.8 ? 'bg-green-100 text-green-800' :
-                                    result.similarity >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-gray-100 text-gray-800'
-                                }">
-                                    ${(result.similarity * 100).toFixed(1)}%
-                                </span>
-                            ` : '<span class="text-red-500 text-sm">Error</span>'}
-                        </div>
-                    </div>
-                    ${result.error ? `
-                        <div class="text-xs text-red-600 mt-1">Error: ${result.error}</div>
-                    ` : ''}
+        <div id="similarity-batch-paginator"></div>
+    `;
+
+    resultsDiv.innerHTML = html;
+
+    const renderRow = (result) => `
+        <div class="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-sm transition-all">
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex-1">
+                    <h4 class="font-medium text-gray-900">${result.name}</h4>
+                    <code class="text-xs text-gray-600 break-all">${result.target_smiles}</code>
                 </div>
-            `).join('')}
-            ${results.length > 50 ? `
-                <div class="text-center text-sm text-gray-500 py-3">
-                    Showing top 50 of ${results.length} results
+                <div class="ml-4">
+                    ${result.similarity !== null ? `
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                            result.similarity >= 0.8 ? 'bg-green-100 text-green-800' :
+                            result.similarity >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                        }">
+                            ${(result.similarity * 100).toFixed(1)}%
+                        </span>
+                    ` : '<span class="text-red-500 text-sm">Error</span>'}
                 </div>
+            </div>
+            ${result.error ? `
+                <div class="text-xs text-red-600 mt-1">Error: ${result.error}</div>
             ` : ''}
         </div>
     `;
 
-    resultsDiv.innerHTML = html;
+    if (window.NuGenPagination) {
+        window.NuGenPagination.render({
+            container: resultsDiv.querySelector('#similarity-batch-paginator'),
+            items: results,
+            renderItem: renderRow,
+            pageSize: 25,
+        });
+    } else {
+        resultsDiv.querySelector('#similarity-batch-paginator').innerHTML =
+            `<div class="space-y-3">${results.slice(0, 50).map(renderRow).join('')}</div>`;
+    }
 
     if (window.lucide) {
         lucide.createIcons();

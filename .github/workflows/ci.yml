@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
 
@@ -112,6 +112,11 @@ jobs:
           tags: nugenrdkit:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Bake the deploying commit SHA into the image so /health
+          # reports it (the .dockerignore strips .git from the build
+          # context). The Dockerfile reads this via ARG GIT_SHA.
+          build-args: |
+            GIT_SHA=${{ github.sha }}
 
       - name: Run image
         run: |
@@ -120,9 +125,14 @@ jobs:
             nugenrdkit:ci
           # Wait for the container to become healthy.
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8000/health; then
-              echo
-              echo "image responded"
+            if response=$(curl -fsS http://127.0.0.1:8000/health); then
+              echo "$response"
+              # Sanity-check the baked GIT_SHA surfaced via ARG.
+              if echo "$response" | grep -q "${GITHUB_SHA}"; then
+                echo "image responded; /health reports baked GIT_SHA"
+              else
+                echo "image responded; WARN: /health did not echo GIT_SHA"
+              fi
               exit 0
             fi
             sleep 2

@@ -115,6 +115,26 @@ _GENERIC_BODY = {
     "example": {"smiles": "CCO"},
 }
 
+
+# Phase F+: per-route example bodies. Sourced from the same canonical
+# inventory the test oracle uses, so the Swagger UI "Try it out"
+# values are guaranteed to be ones the route actually accepts.
+# Imported lazily inside build_spec to avoid a hard test-package
+# dependency at app boot.
+def _per_route_examples() -> dict[str, dict]:
+    """Map URL → example POST body for the Swagger UI 'Try it out' panel."""
+    try:
+        from tests.fixtures.inventory import ALL_ENDPOINTS
+    except Exception:
+        return {}
+    out: dict[str, dict] = {}
+    for ep in ALL_ENDPOINTS:
+        if not ep.payload:
+            continue
+        out[ep.url] = ep.payload
+    return out
+
+
 _OK_ENVELOPE = {
     "description": "Operation succeeded.",
     "content": {
@@ -170,12 +190,14 @@ _RATE_LIMIT_ENVELOPE = {
 }
 
 
-def _path_item(rule, view) -> dict[str, Any]:
+def _path_item(rule, view, examples: dict[str, dict]) -> dict[str, Any]:
     """Build the OpenAPI path-item for a single Flask rule."""
     summary, description = _docstring_summary(view)
     tag = _tag_for_path(rule.rule)
     methods = sorted(rule.methods - {"HEAD", "OPTIONS"})
     item: dict[str, Any] = {}
+
+    example = examples.get(rule.rule)
 
     for method in methods:
         op: dict[str, Any] = {
@@ -192,9 +214,18 @@ def _path_item(rule, view) -> dict[str, Any]:
         if description:
             op["description"] = description
         if method in {"POST", "PUT", "PATCH"}:
+            # Use a per-route schema if we have a canonical example;
+            # falls back to the generic body otherwise.
+            schema: dict[str, Any] = dict(_GENERIC_BODY)
+            if example is not None:
+                schema = {
+                    "type": "object",
+                    "additionalProperties": True,
+                    "example": example,
+                }
             op["requestBody"] = {
-                "required": False,
-                "content": {"application/json": {"schema": _GENERIC_BODY}},
+                "required": example is not None,
+                "content": {"application/json": {"schema": schema}},
             }
         item[method.lower()] = op
 
@@ -203,6 +234,7 @@ def _path_item(rule, view) -> dict[str, Any]:
 
 def build_spec() -> dict[str, Any]:
     """Build the full OpenAPI 3.0 document by reflecting on the live app."""
+    examples = _per_route_examples()
     paths: dict[str, dict] = {}
     for rule in current_app.url_map.iter_rules():
         # Only document the public API surface.
@@ -214,7 +246,7 @@ def build_spec() -> dict[str, Any]:
         view = current_app.view_functions.get(rule.endpoint)
         # Translate Flask rule syntax to OpenAPI's: /export/<format> → /export/{format}
         spec_path = re.sub(r"<(?:\w+:)?(\w+)>", r"{\1}", rule.rule)
-        item = _path_item(rule, view)
+        item = _path_item(rule, view, examples)
         if spec_path in paths:
             # Multiple Flask rules can share a path (different methods).
             paths[spec_path].update(item)
@@ -265,26 +297,13 @@ _SWAGGER_TEMPLATE = """<!DOCTYPE html>
     <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"
             integrity="sha384-wmyclcVGX/WhUkdkATwhaK1X1JtiNrr2EoYJ+diV3vj4v6OC5yCeSu+yW13SYJep"
             crossorigin="anonymous"></script>
-    <script>
-        window.onload = function () {
-            window.ui = SwaggerUIBundle({
-                url: "{{ spec_url }}",
-                dom_id: "#swagger-ui",
-                deepLinking: true,
-                docExpansion: "list",
-                tagsSorter: "alpha",
-                operationsSorter: "alpha",
-                tryItOutEnabled: true,
-            });
-        };
-    </script>
+    {# Swagger init lives in /static/ so the CSP `script-src 'self'` rule
+       admits it without an unsafe-inline exception. #}
+    <script src="{{ url_for('static', filename='js/swagger_init.js') }}" defer></script>
 </body>
 </html>"""
 
 
 @openapi_bp.route("/docs")
 def swagger_ui():
-    return render_template_string(
-        _SWAGGER_TEMPLATE,
-        spec_url="/api/v1/openapi.json",
-    )
+    return render_template_string(_SWAGGER_TEMPLATE)

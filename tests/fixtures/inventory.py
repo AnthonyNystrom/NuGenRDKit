@@ -617,6 +617,9 @@ STATIC_ASSETS: list[str] = [
     # migrated to NuGenUtils + per-page modules). base_init.js is its
     # tiny replacement (lucide icon refresh + mobile menu wiring).
     "static/js/base_init.js",
+    # Phase E (UI overhaul): Recent.* recent-molecules ring buffer +
+    # sidebar/dashboard renderers.
+    "static/js/recent.js",
     # Phase 5 per-page modules. Each pair (test_file_exists +
     # test_flask_serves) is auto-registered under tests/test_static_assets.py.
     "static/js/index.js",
@@ -628,8 +631,13 @@ STATIC_ASSETS: list[str] = [
     "static/js/properties.js",
     "static/js/coordinates.js",
     "static/js/visualization.js",
-    # Phase 7 polish: molecule picker modal on /structure.
-    "static/js/structure_picker.js",
+    # Generic molecule library + library picker — available on every page
+    # with a primary SMILES input. Replaces the legacy structure_picker.js.
+    "static/js/molecule_library.js",
+    "static/js/library_picker.js",
+    "static/js/workspace_save.js",
+    "static/js/pagination.js",
+    "static/js/swagger_init.js",
     "static/favicon.ico",
     "static/favicon.svg",
     "static/favicon-16x16.png",

@@ -1,18 +1,13 @@
 /**
- * index.js — page module for "/" (the home dashboard).
+ * index.js — chemist dashboard module for "/".
  *
- * Phase-5 migration: replaces the inline <script> block that previously
- * lived at the bottom of templates/index.html. Uses
- *   NuGenUtils.fetchJSON     — for /api/v1/** calls (60 s timeout, JSON envelopes)
- *   NuGenUtils.escapeHtml    — for any user-supplied text inserted into DOM
- *   NuGenUtils.registerAction — wires `data-action` clicks (no inline onclick=)
- *   Formatters.number        — null-safe formatting of numeric properties
+ * Drives:
+ *   - Quick analysis (paste a SMILES → structure + properties)
+ *   - "Send to tool" buttons (registered via data-action="quickAction")
+ *   - "Load example" chips
+ *   - System probe panel (RDKit / Python / Flask versions, status badge)
  *
- * Public actions registered (called from data-action="..." attributes):
- *   navigate(path)           — window.location = path
- *   loadExample(smiles)      — paste SMILES into #global-search and run
- *   runGlobalSearch()        — manually trigger the search
- *   quickAction(target)      — navigate to /<target>?smiles=...
+ * Recent-molecules rendering lives in static/js/recent.js (Phase E).
  */
 (function () {
   "use strict";
@@ -29,20 +24,16 @@
   // data-action handlers
   // ==========================================================================
 
-  Utils.registerAction("navigate", function (path) {
-    if (typeof path === "string" && path) window.location.href = path;
-  });
-
   Utils.registerAction("loadExample", function (smiles, name) {
     const input = document.getElementById("global-search");
     if (!input) return;
     input.value = smiles || "";
     input.dispatchEvent(new Event("input", { bubbles: true }));
     if (name) Utils.showAlert(`Loaded ${name}`, "info", 1500);
-    runGlobalSearch();
+    runQuickAnalysis();
   });
 
-  Utils.registerAction("runGlobalSearch", runGlobalSearch);
+  Utils.registerAction("runGlobalSearch", runQuickAnalysis);
 
   Utils.registerAction("quickAction", function (target) {
     const input = document.getElementById("global-search");
@@ -56,16 +47,24 @@
     window.location.href = url.toString();
   });
 
+  Utils.registerAction("clearRecent", function () {
+    if (window.Recent && typeof window.Recent.clear === "function") {
+      window.Recent.clear();
+      Utils.showAlert("Recent cleared", "info", 1500);
+    }
+  });
+
   // ==========================================================================
-  // Global search (formerly performGlobalSearch in inline script)
+  // Quick analysis
   // ==========================================================================
 
-  async function runGlobalSearch() {
+  let inFlight = null;
+
+  async function runQuickAnalysis() {
     const input = document.getElementById("global-search");
-    const resultsDiv = document.getElementById("search-results");
     const structureDiv = document.getElementById("search-structure");
-    const propertiesDiv = document.getElementById("search-properties");
-    if (!input || !resultsDiv || !structureDiv || !propertiesDiv) return;
+    const propertiesEl = document.getElementById("search-properties");
+    if (!input || !structureDiv || !propertiesEl) return;
 
     const smiles = input.value.trim();
     if (!smiles) {
@@ -73,167 +72,112 @@
       return;
     }
 
-    resultsDiv.classList.remove("hidden");
-    structureDiv.innerHTML = renderSpinner();
-    propertiesDiv.innerHTML = renderPropertiesSkeleton();
+    structureDiv.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 quick-results-spin"></i>`;
+    refreshIcons();
 
-    let structureData = null;
-    let propertiesData = null;
+    // Cancel any prior request via AbortController.
+    if (inFlight) inFlight.abort();
+    inFlight = new AbortController();
+
+    let svg, props;
     try {
-      [structureData, propertiesData] = await Promise.all([
+      [svg, props] = await Promise.all([
         Utils.fetchJSON("/api/v1/visualization/draw_svg", {
           method: "POST",
-          body: { smiles, width: 200, height: 120 },
+          body: { smiles, width: 220, height: 160 },
+          signal: inFlight.signal,
         }).catch((err) => ({ success: false, error: err.message })),
         Utils.fetchJSON("/api/v1/properties/physicochemical", {
           method: "POST",
           body: { smiles },
+          signal: inFlight.signal,
         }).catch((err) => ({ success: false, error: err.message })),
       ]);
     } catch (err) {
-      console.error("Search error:", err);
-      Utils.showAlert("Search failed. Please try again.", "error");
-      structureDiv.innerHTML = renderError();
-      propertiesDiv.innerHTML = renderPropertiesError();
-      reInitIcons();
+      if (err.name === "AbortError") return;
+      console.error("[index] quick analysis failed:", err);
+      Utils.showAlert("Quick analysis failed", "error", 2500);
       return;
+    } finally {
+      inFlight = null;
     }
 
-    // Structure: server-rendered SVG. RDKit produces this on the
-    // backend so the markup is trusted; no escapeHtml here would
-    // break the SVG. Phase 7 may DOMPurify it for defense in depth.
-    if (structureData.success && structureData.svg) {
-      structureDiv.innerHTML = structureData.svg;
+    // Structure: server-rendered SVG, safe to inject.
+    if (svg && svg.success && svg.svg) {
+      structureDiv.innerHTML = svg.svg;
     } else {
-      structureDiv.innerHTML = renderError();
+      structureDiv.innerHTML = `<div class="alert-app-error">${Utils.escapeHtml(svg?.error || "Failed")}</div>`;
     }
 
-    // Properties: build via Formatters.number to defang any odd
-    // numeric value the API might emit.
-    if (propertiesData.success && propertiesData.properties) {
-      const p = propertiesData.properties;
-      propertiesDiv.innerHTML = renderProperties({
+    // Properties: format with Fmt.number for null safety.
+    if (props && props.success && props.properties) {
+      const p = props.properties;
+      const pairs = {
         MW: Fmt.number(p.molecular_weight, { digits: 1 }),
         LogP: Fmt.number(p.logp, { digits: 2 }),
         HBD: Fmt.number(p.num_h_donors, { digits: 0 }),
         HBA: Fmt.number(p.num_h_acceptors, { digits: 0 }),
-      });
+      };
+      propertiesEl.innerHTML = Object.entries(pairs)
+        .map(([k, v]) => `<div><dt>${Utils.escapeHtml(k)}</dt><dd>${Utils.escapeHtml(v)}</dd></div>`)
+        .join("");
     } else {
-      propertiesDiv.innerHTML = renderPropertiesError();
+      propertiesEl.innerHTML = `<div><dt>Error</dt><dd>${Utils.escapeHtml(props?.error || "Failed")}</dd></div>`;
     }
 
-    reInitIcons();
-  }
-
-  // ==========================================================================
-  // DOM rendering helpers — strings are static or pre-formatted
-  // ==========================================================================
-
-  function renderSpinner() {
-    return `
-      <div class="flex items-center justify-center h-full">
-        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
-      </div>`;
-  }
-
-  function renderError(msg = "Error") {
-    return `
-      <div class="flex items-center justify-center h-full text-red-500">
-        <i data-lucide="alert-circle" class="w-6 h-6"></i>
-        <span class="sr-only">${Utils.escapeHtml(msg)}</span>
-      </div>`;
-  }
-
-  function renderPropertiesSkeleton() {
-    return ["MW", "LogP", "HBD", "HBA"]
-      .map(
-        (label) => `
-        <div class="flex justify-between">
-          <span class="text-gray-600">${label}:</span>
-          <span class="font-mono animate-pulse">…</span>
-        </div>`
-      )
-      .join("");
-  }
-
-  function renderProperties(values) {
-    return Object.entries(values)
-      .map(
-        ([label, value]) => `
-        <div class="flex justify-between">
-          <span class="text-gray-600">${Utils.escapeHtml(label)}:</span>
-          <span class="font-mono">${Utils.escapeHtml(value)}</span>
-        </div>`
-      )
-      .join("");
-  }
-
-  function renderPropertiesError() {
-    return `
-      <div class="text-center text-red-500 text-sm">
-        <i data-lucide="alert-circle" class="w-4 h-4 mx-auto mb-1"></i>
-        <p>Analysis failed</p>
-      </div>`;
-  }
-
-  function reInitIcons() {
-    if (window.lucide && typeof window.lucide.createIcons === "function") {
-      window.lucide.createIcons();
+    // Stamp the recent-history ring buffer.
+    if (window.Recent && typeof window.Recent.add === "function") {
+      window.Recent.add({ smiles, page: "/" });
     }
   }
 
   // ==========================================================================
-  // Hero molecule (right side of the hero section).
-  // Replaces the legacy app.js::loadHeroMolecule(). Renders a recognizable
-  // molecule (caffeine) into #hero-molecule so the panel isn't empty on
-  // first paint. The placeholder stays if the request fails.
+  // System probe panel
   // ==========================================================================
 
-  async function loadHeroMolecule() {
-    const target = document.getElementById("hero-molecule");
-    if (!target) return;
+  async function loadSystemInfo() {
+    const rdkit = document.getElementById("sys-rdkit");
+    const python = document.getElementById("sys-python");
+    const flask = document.getElementById("sys-flask");
+    const status = document.getElementById("sys-status");
+    if (!rdkit) return;
     try {
-      const data = await Utils.fetchJSON("/api/v1/visualization/draw_svg", {
-        method: "POST",
-        body: {
-          smiles: "CN1C=NC2=C1C(=O)N(C(=O)N2C)C", // caffeine
-          width: 320,
-          height: 280,
-        },
-      });
-      if (data && data.success && data.svg) {
-        // SVG is server-rendered by RDKit, not user-supplied — safe to inject.
-        // Solid white wrapper so the molecule renders crisp against the dark
-        // hero gradient (bg-white/95 was undefined in app.css).
-        target.innerHTML =
-          `<div class="w-full h-full flex items-center justify-center bg-white rounded-xl p-4">` +
-          data.svg +
-          `</div>`;
+      const data = await Utils.fetchJSON("/health");
+      rdkit.textContent = data?.versions?.rdkit || "?";
+      python.textContent = data?.versions?.python || "?";
+      flask.textContent = data?.versions?.flask || "?";
+      if (data?.rdkit_working) {
+        status.className = "badge-app-success";
+        status.textContent = "healthy";
+      } else {
+        status.className = "badge-app-error";
+        status.textContent = "degraded";
       }
     } catch (err) {
-      // Silent failure — placeholder remains visible. The /health probe
-      // banner (Phase 1) will surface a global outage if the API is dead.
-      console.warn("[index] hero molecule failed to load:", err.message);
+      status.className = "badge-app-error";
+      status.textContent = "offline";
     }
   }
 
   // ==========================================================================
-  // Boot — wire keyboard + auto-search + hero molecule
+  // Boot
   // ==========================================================================
 
-  document.addEventListener("DOMContentLoaded", function () {
-    loadHeroMolecule();
+  function refreshIcons() {
+    if (window.lucide) window.lucide.createIcons();
+  }
 
+  document.addEventListener("DOMContentLoaded", function () {
     const searchInput = document.getElementById("global-search");
     if (searchInput) {
       searchInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
-          runGlobalSearch();
+          runQuickAnalysis();
         }
       });
-      // Auto-search if the field already has a value (page refresh/SSR).
-      if (searchInput.value.trim()) runGlobalSearch();
+      if (searchInput.value.trim()) runQuickAnalysis();
     }
+    loadSystemInfo();
   });
 })();

@@ -203,7 +203,12 @@ async function processReaction() {
                 displayReactionResults(data, requestData);
             }
             enableExportButtons();
-            
+            // Stamp the SMARTS / first reactant SMILES into Recent so it
+            // can be revisited from the sidebar.
+            const stampSmiles = (requestData.reaction_smarts || requestData.smiles
+                || (requestData.reactants && requestData.reactants[0]) || '').toString();
+            if (stampSmiles) window.Recent?.add({ smiles: stampSmiles, page: '/reactions' });
+
             statusSpan.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800';
             statusSpan.textContent = 'Complete';
             
@@ -489,7 +494,7 @@ function displayReactionResults(data, request) {
         `;
     } else {
         libraryDiv.innerHTML = `
-            <div class="space-y-4 max-h-96 overflow-y-auto">
+            <div class="space-y-4 max-h-96 overflow-y-auto" tabindex="0">
                 ${products.map((product, index) => `
                     <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                         <div class="flex items-center justify-between">
@@ -825,7 +830,7 @@ function displayBatchReactionResults(data) {
             </div>
         </div>
 
-        <div class="space-y-3 max-h-96 overflow-y-auto">
+        <div class="space-y-3 max-h-96 overflow-y-auto" tabindex="0">
             ${products.slice(0, 50).map((product, idx) => `
                 <div class="p-4 border border-gray-200 rounded-lg hover:border-orange-300 hover:shadow-sm transition-all">
                     <div class="flex justify-between items-start mb-2">

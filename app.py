@@ -168,7 +168,20 @@ def api_info():
 
 
 def _git_sha() -> str:
-    """Best-effort short SHA; empty string when unavailable."""
+    """Best-effort short SHA; empty string when unavailable.
+
+    Resolution order:
+      1. `GIT_SHA` env var — explicit override; used by Docker images
+         where the build pipeline bakes the deploying commit at build
+         time (.dockerignore strips .git from the runtime context).
+      2. `git rev-parse --short HEAD` — local checkout fallback.
+      3. Empty string when neither is available.
+    """
+    env = os.environ.get("GIT_SHA", "").strip()
+    if env:
+        # Match the local-checkout format: 7-char short sha when a full
+        # 40-char hash was passed in (e.g. ${{ github.sha }} from CI).
+        return env[:7] if len(env) >= 40 else env
     try:
         out = subprocess.check_output(
             ["git", "rev-parse", "--short", "HEAD"],
@@ -178,7 +191,7 @@ def _git_sha() -> str:
         )
         return out.decode().strip()
     except Exception:
-        return os.environ.get("GIT_SHA", "")
+        return ""
 
 
 @app.route("/health")

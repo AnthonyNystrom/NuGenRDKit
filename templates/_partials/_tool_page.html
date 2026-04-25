@@ -1,0 +1,57 @@
+{# ===================================================================
+   _tool_page.html — single source of truth for tool page chrome.
+
+   Phase C of the chemist-UI overhaul. Every page (Phase D migrates
+   them one by one) wraps its body in this macro:
+
+       {% from "_partials/_tool_page.html" import tool_page %}
+       {% call tool_page(
+              title="Molecular Structure",
+              icon="box",
+              description="Convert between molecular formats and validate structures.",
+              accent="blue") %}
+           <div class="tool-split">
+               <div class="tool-input">…input form…</div>
+               <div class="tool-results">…results panel…</div>
+           </div>
+       {% endcall %}
+
+   The macro emits the page header (icon tile + title + subtitle)
+   and a body wrapper so the inner HTML doesn't need its own
+   .max-w-7xl / mx-auto / py-8 (the app shell already pads).
+
+   `accent` chooses the icon tile colour from the lightweight
+   palette set: blue / green / purple / orange / cyan / pink /
+   yellow / indigo / teal / red.
+#}
+
+{% macro tool_page(title, icon="box", description="", accent="blue", actions=None) %}
+<section class="tool-page" data-accent="{{ accent }}">
+    <header class="tool-page-header">
+        <div class="tool-page-header-icon" aria-hidden="true">
+            <i data-lucide="{{ icon }}"></i>
+        </div>
+        <div class="tool-page-header-text">
+            <h1 class="page-title">{{ title }}</h1>
+            {% if description %}<p class="page-subtitle">{{ description }}</p>{% endif %}
+        </div>
+        {% if actions %}
+            <div class="tool-page-header-actions">{{ actions | safe }}</div>
+        {% endif %}
+    </header>
+
+    <div class="tool-page-body">
+        {{ caller() }}
+    </div>
+</section>
+{% endmacro %}
+
+
+{# Convenience macro for the standard 2-pane input/results split.
+   Caller passes an `input_block` and a `results_block` Jinja string. #}
+{% macro tool_split(input_block, results_block) %}
+<div class="tool-split">
+    <div class="tool-input">{{ input_block | safe }}</div>
+    <div class="tool-results">{{ results_block | safe }}</div>
+</div>
+{% endmacro %}

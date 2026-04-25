@@ -3,24 +3,12 @@
 {% block title %}Chemical Reactions - NuGenRDKit{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <!-- Page Header -->
-    <div class="mb-8">
-        <div class="flex items-center space-x-3 mb-4">
-            <div class="flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-lg">
-                <i data-lucide="zap" class="w-6 h-6 text-yellow-600"></i>
-            </div>
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Chemical Reactions</h1>
-                <p class="text-gray-600">Process chemical reactions and enumerate product libraries</p>
-            </div>
-        </div>
-    </div>
-
+{% from "_partials/_tool_page.html" import tool_page %}
+{% call tool_page(title="Reactions", icon="zap", description="SMARTS reactions, library enumeration, fingerprints.", accent="yellow") %}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Input Section -->
         <div class="lg:col-span-1">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
+            <div class="card card-body sticky top-24">
                 <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                     <i data-lucide="flask-conical" class="w-5 h-5 mr-2"></i>
                     Reaction Processing
@@ -224,7 +212,7 @@ CC(C)Cc1ccc(cc1)C(C)C(=O)O</textarea>
                             <span class="text-sm font-medium text-orange-900">Batch: Upload reactants file</span>
                         </div>
                         <input type="file"
-                               id="batch-reactions-file"
+                               id="batch-reactions-file" aria-label="Upload reactant file for batch reactions"
                                accept=".smi,.smiles,.sdf,.csv,.txt,.rxn"
                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
                         <p class="text-xs text-gray-600 mt-1">Upload reactants or RXN file (.smi, .sdf, .csv, .rxn - max 50 MB)</p>
@@ -299,7 +287,7 @@ CC(C)Cc1ccc(cc1)C(C)C(=O)O</textarea>
         <div class="lg:col-span-2">
             <div class="space-y-6">
                 <!-- Reaction Overview -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-semibold text-gray-900 flex items-center">
                             <i data-lucide="activity" class="w-5 h-5 mr-2"></i>
@@ -324,7 +312,7 @@ CC(C)Cc1ccc(cc1)C(C)C(=O)O</textarea>
                 </div>
 
                 <!-- Product Library -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-lg font-semibold text-gray-900 flex items-center">
                             <i data-lucide="layers" class="w-5 h-5 mr-2"></i>
@@ -346,7 +334,7 @@ CC(C)Cc1ccc(cc1)C(C)C(=O)O</textarea>
                 </div>
 
                 <!-- Reaction Statistics -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <i data-lucide="bar-chart-2" class="w-5 h-5 mr-2"></i>
                         Reaction Statistics
@@ -364,7 +352,7 @@ CC(C)Cc1ccc(cc1)C(C)C(=O)O</textarea>
             </div>
         </div>
     </div>
-</div>
+{% endcall %}
 {% endblock %}
 
 {%- block extra_scripts %}

@@ -43,6 +43,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const smiles = this.getAttribute('data-smiles');
             document.getElementById('fingerprint-input').value = smiles;
             generateFingerprint();
+            document.getElementById('fingerprint-display')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
     
@@ -114,6 +116,7 @@ async function generateFingerprint() {
             displayFingerprint(data, smiles, fpType);
             document.getElementById('export-btn').disabled = false;
             window.lastFingerprintData = data; // Store for export and comparison
+            window.Recent?.add({ smiles, page: '/fingerprints' });
         } else {
             showAlert(data.error || 'Generation failed', 'danger');
         }
@@ -406,37 +409,45 @@ function displayBatchFingerprintResults(data) {
             </div>
         </div>
 
-        <div class="space-y-3 max-h-96 overflow-y-auto">
-            ${results.slice(0, 20).map(result => `
-                <div class="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:shadow-sm transition-all">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex-1">
-                            <h4 class="font-medium text-gray-900">${result.name}</h4>
-                            <code class="text-xs text-gray-600">${result.smiles}</code>
-                        </div>
-                        <div class="ml-4">
-                            ${result.error ? `
-                                <span class="text-xs text-red-600">Error</span>
-                            ` : `
-                                <span class="text-xs text-green-600">${result.on_bits} bits set</span>
-                            `}
-                        </div>
-                    </div>
+        <div id="fingerprint-batch-paginator"></div>
+    `;
+
+    const container = document.getElementById('fingerprint-results');
+    container.innerHTML = html;
+
+    const renderRow = (result) => `
+        <div class="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:shadow-sm transition-all">
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex-1">
+                    <h4 class="font-medium text-gray-900">${result.name}</h4>
+                    <code class="text-xs text-gray-600">${result.smiles}</code>
+                </div>
+                <div class="ml-4">
                     ${result.error ? `
-                        <div class="text-xs text-red-600 mt-1">Error: ${result.error}</div>
-                    ` : ''}
+                        <span class="text-xs text-red-600">Error</span>
+                    ` : `
+                        <span class="text-xs text-green-600">${result.on_bits} bits set</span>
+                    `}
                 </div>
-            `).join('')}
-            ${results.length > 20 ? `
-                <div class="text-center text-sm text-gray-500 py-3">
-                    Showing 20 of ${results.length} results (export as CSV/NumPy for full data)
-                </div>
+            </div>
+            ${result.error ? `
+                <div class="text-xs text-red-600 mt-1">Error: ${result.error}</div>
             ` : ''}
         </div>
     `;
 
-    document.getElementById('fingerprint-results').innerHTML = html;
-    lucide.createIcons();
+    if (window.NuGenPagination) {
+        window.NuGenPagination.render({
+            container: container.querySelector('#fingerprint-batch-paginator'),
+            items: results,
+            renderItem: renderRow,
+            pageSize: 20,
+        });
+    } else {
+        container.querySelector('#fingerprint-batch-paginator').innerHTML =
+            `<div class="space-y-3">${results.slice(0, 20).map(renderRow).join('')}</div>`;
+    }
+    if (window.lucide) lucide.createIcons();
 }
 
 function showAlert(message, type) {

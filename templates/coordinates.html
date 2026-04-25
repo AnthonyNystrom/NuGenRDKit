@@ -3,24 +3,12 @@
 {% block title %}3D Coordinates - NuGenRDKit{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <!-- Page Header -->
-    <div class="mb-8">
-        <div class="flex items-center space-x-3 mb-4">
-            <div class="flex items-center justify-center w-12 h-12 bg-cyan-100 rounded-lg">
-                <i data-lucide="box" class="w-6 h-6 text-cyan-600"></i>
-            </div>
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">3D Coordinates</h1>
-                <p class="text-gray-600">Generate 2D depictions and 3D molecular conformations</p>
-            </div>
-        </div>
-    </div>
-
+{% from "_partials/_tool_page.html" import tool_page %}
+{% call tool_page(title="3D Coordinates", icon="orbit", description="2D depictions, 3D conformers, alignment, optimization.", accent="cyan") %}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Input Section -->
         <div class="lg:col-span-1">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
+            <div class="card card-body sticky top-24">
                 <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                     <i data-lucide="settings" class="w-5 h-5 mr-2"></i>
                     Coordinate Generation
@@ -233,7 +221,7 @@
                             <span class="text-sm font-medium text-teal-900">Import: Upload structure file</span>
                         </div>
                         <input type="file"
-                               id="coordinates-file-import"
+                               id="coordinates-file-import" aria-label="Import coordinates file (.sdf, .mol)"
                                accept=".sdf,.mol"
                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
                         <p class="text-xs text-gray-600 mt-1">Import structures with coordinates (.sdf, .mol - max 50 MB)</p>
@@ -300,7 +288,7 @@
         <div class="lg:col-span-2">
             <div class="space-y-6">
                 <!-- 3D Viewer -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-semibold text-gray-900 flex items-center">
                             <i data-lucide="eye" class="w-5 h-5 mr-2"></i>
@@ -364,7 +352,7 @@
                 </div>
 
                 <!-- Conformer Analysis -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <i data-lucide="bar-chart-2" class="w-5 h-5 mr-2"></i>
                         Conformer Analysis
@@ -381,7 +369,7 @@
                 </div>
 
                 <!-- Coordinate Data -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="card card-body">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-gray-900 flex items-center">
                             <i data-lucide="table" class="w-5 h-5 mr-2"></i>
@@ -413,12 +401,15 @@
             </div>
         </div>
     </div>
-</div>
+{% endcall %}
 {% endblock %}
 
 {% block page_scripts %}
-{# Phase 5: 3Dmol.js (~500 KB) is loaded only on pages that use it. #}
-<script src="https://cdn.jsdelivr.net/npm/3dmol@2.0.4/build/3Dmol.js"
+{# Phase 5: 3Dmol.js (~500 KB) is loaded only on pages that use it.
+   `defer` so the parser doesn't block on the network fetch — coordinates.js
+   is also `defer`, so execution order between them is preserved. #}
+<script defer
+        src="https://cdn.jsdelivr.net/npm/3dmol@2.0.4/build/3Dmol.js"
         integrity="sha384-HfGnTso7wAgbnVQLKG4WfRvctoBn62U8In3+aSGVEqldjWZJ4vNpfOWuNFiqeNFk"
         crossorigin="anonymous"></script>
 {% endblock %}

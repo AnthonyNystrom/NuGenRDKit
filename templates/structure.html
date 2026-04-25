@@ -3,24 +3,13 @@
 {% block title %}Molecular Structure - NuGenRDKit{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <!-- Page Header -->
-    <div class="mb-8">
-        <div class="flex items-center space-x-3 mb-4">
-            <div class="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg">
-                <i data-lucide="box" class="w-6 h-6 text-blue-600"></i>
-            </div>
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Molecular Structure</h1>
-                <p class="text-gray-600">Convert between different molecular formats and validate structures</p>
-            </div>
-        </div>
-    </div>
+{% from "_partials/_tool_page.html" import tool_page %}
+{% call tool_page(title="Molecular Structure", icon="box", description="Convert between molecular formats and validate structures.", accent="blue") %}
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Input Section -->
         <div class="space-y-6">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="card card-body">
                 <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                     <i data-lucide="edit-3" class="w-5 h-5 mr-2"></i>
                     Structure Input
@@ -98,7 +87,7 @@
                             <span class="text-sm font-medium text-blue-900">Batch: Upload structure file</span>
                         </div>
                         <input type="file"
-                               id="batch-structure-file"
+                               id="batch-structure-file" aria-label="Upload structure file (.smi, .sdf, .mol, .pdb)"
                                accept=".smi,.smiles,.sdf,.mol,.mol2,.pdb"
                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         <p class="text-xs text-gray-600 mt-1">Convert multiple structures (.smi, .sdf, .mol, .pdb - max 50 MB)</p>
@@ -120,7 +109,7 @@
             </div>
 
             <!-- Quick Examples -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="card card-body">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Examples</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button class="example-molecule p-3 text-left border border-gray-200 rounded-lg hover:border-primary-200 hover:bg-primary-50 transition-colors" data-smiles="CCO">
@@ -145,7 +134,7 @@
 
         <!-- Results Section -->
         <div class="space-y-6">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="card card-body">
                 <h2 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                     <i data-lucide="eye" class="w-5 h-5 mr-2"></i>
                     Structure Display
@@ -164,7 +153,7 @@
             </div>
 
             <!-- Additional Tools -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="card card-body">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <i data-lucide="wrench" class="w-5 h-5 mr-2"></i>
                     Additional Tools
@@ -196,15 +185,13 @@
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         <span class="text-gray-900">Processing...</span>
     </div>
-</div>
 
-{# Phase 7: shared modal scaffold for the structure picker. #}
-{% include "_partials/_modal.html" %}
+{% endcall %}
 {% endblock %}
 
 {%- block extra_scripts %}
 {# Phase 5: page logic moved to static/js/structure.js.
-   Phase 7: structure_picker.js adds the molecule library + MOL paste UX. #}
+   Library picker + MOL paste UX now ship from the generic
+   library_picker.js (loaded in base.html for every page). #}
 <script defer src="{{ url_for('static', filename='js/structure.js') }}"></script>
-<script defer src="{{ url_for('static', filename='js/structure_picker.js') }}"></script>
 {%- endblock %}

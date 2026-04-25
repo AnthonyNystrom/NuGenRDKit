@@ -39,6 +39,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const smiles = this.getAttribute('data-smiles');
             document.getElementById('descriptor-input').value = smiles;
             calculateDescriptors();
+            // Scroll the result panel into view so the user sees
+            // loading-then-result rather than staring at the button.
+            document.getElementById('descriptor-results')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
     
@@ -80,6 +84,7 @@ async function calculateDescriptors() {
             displayDescriptors(data.descriptors, smiles, descriptorType);
             document.getElementById('export-btn').disabled = false;
             window.lastDescriptorData = data; // Store for export
+            window.Recent?.add({ smiles, page: '/descriptors' });
         } else {
             showAlert(data.error || 'Calculation failed', 'danger');
             document.getElementById('descriptor-results').innerHTML = `
@@ -349,7 +354,8 @@ function displayBatchResults(data) {
     const successful = data.num_successful || 0;
     const total = data.num_molecules || 0;
 
-    let html = `
+    const container = document.getElementById('descriptor-results');
+    container.innerHTML = `
         <div class="mb-6 bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Batch Results</h3>
             <div class="grid grid-cols-3 gap-4 text-sm">
@@ -367,43 +373,47 @@ function displayBatchResults(data) {
                 </div>
             </div>
         </div>
+        <div id="descriptor-batch-paginator"></div>
+    `;
 
-        <div class="space-y-3 max-h-96 overflow-y-auto">
-            ${results.slice(0, 20).map((result, idx) => `
-                <div class="p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:shadow-sm transition-all">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex-1">
-                            <h4 class="font-medium text-gray-900">${result.name}</h4>
-                            <code class="text-xs text-gray-600">${result.smiles}</code>
-                        </div>
-                        ${result.error ? `
-                            <span class="ml-4 text-xs text-red-600">Error: ${result.error}</span>
-                        ` : `
-                            <span class="ml-4 text-xs text-green-600">✓ Success</span>
-                        `}
-                    </div>
-                    ${result.descriptors ? `
-                        <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
-                            ${Object.entries(result.descriptors).slice(0, 6).map(([key, val]) => `
-                                <div>
-                                    <span class="text-gray-600">${key}:</span>
-                                    <span class="font-medium">${typeof val === 'number' ? val.toFixed(2) : val}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
+    const renderRow = (result) => `
+        <div class="p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:shadow-sm transition-all">
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex-1">
+                    <h4 class="font-medium text-gray-900">${result.name}</h4>
+                    <code class="text-xs text-gray-600">${result.smiles}</code>
                 </div>
-            `).join('')}
-            ${results.length > 20 ? `
-                <div class="text-center text-sm text-gray-500 py-3">
-                    Showing 20 of ${results.length} results (export as CSV for full data)
+                ${result.error ? `
+                    <span class="ml-4 text-xs text-red-600">Error: ${result.error}</span>
+                ` : `
+                    <span class="ml-4 text-xs text-green-600">✓ Success</span>
+                `}
+            </div>
+            ${result.descriptors ? `
+                <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                    ${Object.entries(result.descriptors).slice(0, 6).map(([key, val]) => `
+                        <div>
+                            <span class="text-gray-600">${key}:</span>
+                            <span class="font-medium">${typeof val === 'number' ? val.toFixed(2) : val}</span>
+                        </div>
+                    `).join('')}
                 </div>
             ` : ''}
         </div>
     `;
 
-    document.getElementById('descriptor-results').innerHTML = html;
-    lucide.createIcons();
+    if (window.NuGenPagination) {
+        window.NuGenPagination.render({
+            container: container.querySelector('#descriptor-batch-paginator'),
+            items: results,
+            renderItem: renderRow,
+            pageSize: 20,
+        });
+    } else {
+        container.querySelector('#descriptor-batch-paginator').innerHTML =
+            `<div class="space-y-3">${results.slice(0, 20).map(renderRow).join('')}</div>`;
+    }
+    if (window.lucide) lucide.createIcons();
 }
 
 function showAlert(message, type) {

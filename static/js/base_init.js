@@ -1,43 +1,104 @@
 /**
  * base_init.js — small bootstrap loaded on every page.
  *
- * Two responsibilities:
- *   1. Tell lucide to scan the document and replace `<i data-lucide="…">`
- *      placeholder elements with the actual SVG icon. Lucide must already
- *      be on `window.lucide` (its CDN script tag is loaded just before us).
- *   2. Wire the topbar's mobile-menu toggle. Updates `aria-expanded`
- *      so the screen-reader announcement matches the visible state.
- *
- * Phase 5: extracted from the inline <script> at the bottom of
- * templates/base.html so CSP `script-src` no longer needs `'unsafe-inline'`.
+ * Responsibilities:
+ *   1. Run lucide.createIcons() once the SVGs land + every time
+ *      a per-page module asks for an icon refresh.
+ *   2. Wire the topbar sidebar-toggle (mobile hamburger).
+ *   3. Register cross-cutting actions:
+ *        - toggleSidebar  — shows/hides sidebar on mobile
+ *        - toggleDensity  — swaps html[data-density] dense ↔ comfortable,
+ *                          persisted in localStorage
+ *      (toggleTheme + toggleWorkspace already live in utils.js +
+ *       workspace.js respectively.)
+ *   4. Reflect the current Workspace count into the topbar /
+ *      sidebar badges by subscribing to Workspace.onChange.
  */
 (function () {
   "use strict";
 
+  // -------------------------------------------------------------- //
+  // Lucide icon refresh
+  // -------------------------------------------------------------- //
   function initLucide() {
     if (window.lucide && typeof window.lucide.createIcons === "function") {
       window.lucide.createIcons();
     }
   }
 
-  function wireMobileMenu() {
-    const button = document.getElementById("mobile-menu-button");
-    const menu = document.getElementById("mobile-menu");
-    if (!button || !menu) return;
-    button.addEventListener("click", function () {
-      const isHidden = menu.classList.contains("hidden");
-      menu.classList.toggle("hidden");
-      button.setAttribute("aria-expanded", isHidden ? "true" : "false");
+  // -------------------------------------------------------------- //
+  // Sidebar toggle (mobile)
+  // -------------------------------------------------------------- //
+  function toggleSidebar() {
+    const sidebar = document.getElementById("app-sidebar");
+    const button = document.getElementById("sidebar-toggle");
+    if (!sidebar) return;
+    const open = sidebar.classList.toggle("is-open");
+    if (button) button.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  // -------------------------------------------------------------- //
+  // Density toggle (dense ↔ comfortable)
+  // -------------------------------------------------------------- //
+  const STORAGE_KEY = "nug-density";
+  function applyStoredDensity() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "dense" || stored === "comfortable") {
+      document.documentElement.setAttribute("data-density", stored);
+    }
+  }
+  function toggleDensity() {
+    const current = document.documentElement.getAttribute("data-density") || "dense";
+    const next = current === "dense" ? "comfortable" : "dense";
+    document.documentElement.setAttribute("data-density", next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      /* private browsing — ignore */
+    }
+    if (window.NuGenUtils?.showAlert) {
+      window.NuGenUtils.showAlert(`Density: ${next}`, "info", 1500);
+    }
+  }
+
+  // -------------------------------------------------------------- //
+  // Workspace count badges (topbar + sidebar)
+  // -------------------------------------------------------------- //
+  function renderWorkspaceCount(items) {
+    const count = Array.isArray(items) ? items.length : (window.Workspace?.count?.() || 0);
+    const topbarBadge = document.getElementById("workspace-count-badge");
+    const sidebarBadge = document.getElementById("sidebar-workspace-count");
+    [topbarBadge, sidebarBadge].forEach((el) => {
+      if (!el) return;
+      el.textContent = String(count);
+      el.hidden = count === 0;
     });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () {
-      initLucide();
-      wireMobileMenu();
-    });
-  } else {
+  // -------------------------------------------------------------- //
+  // Boot
+  // -------------------------------------------------------------- //
+  function boot() {
     initLucide();
-    wireMobileMenu();
+    applyStoredDensity();
+
+    // Register actions on NuGenUtils' delegator. utils.js already
+    // wired toggleTheme + toggleWorkspace.
+    if (window.NuGenUtils?.registerAction) {
+      window.NuGenUtils.registerAction("toggleSidebar", toggleSidebar);
+      window.NuGenUtils.registerAction("toggleDensity", toggleDensity);
+    }
+
+    // Live-update the workspace badge.
+    if (window.Workspace?.onChange) {
+      window.Workspace.onChange(renderWorkspaceCount);
+      renderWorkspaceCount(window.Workspace.list?.() || []);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
   }
 })();

@@ -81,6 +81,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = this.getAttribute('data-name');
             document.getElementById('viz-input').value = smiles;
             generateVisualization();
+            document.getElementById('main-visualization')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
     
@@ -241,6 +243,7 @@ async function generateVisualization() {
             loadMolecularInfo(smiles);
             enableExportButtons();
             addToGallery(data, smiles, vizType);
+            window.Recent?.add({ smiles, page: '/visualization' });
             
             window.currentVisualizationData = data; // Store for export
         } else {
@@ -379,7 +382,7 @@ function create3DVisualization(data, smiles, container) {
                             <div class="space-y-3">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Style</label>
-                                    <select id="3d-style" onchange="syncAllStyleDropdowns(this.value)" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                    <select id="3d-style" data-viz-action="syncAllStyleDropdowns" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
                                         <option value="stick">Stick</option>
                                         <option value="sphere">Ball & Stick</option>
                                         <option value="line">Wireframe</option>
@@ -388,7 +391,7 @@ function create3DVisualization(data, smiles, container) {
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Color Scheme</label>
-                                    <select id="3d-color" onchange="update3DColor()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                    <select id="3d-color" data-viz-action="update3DColor" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
                                         <option value="default">By Element</option>
                                         <option value="carbon">Carbon</option>
                                         <option value="spectrum">Spectrum</option>
@@ -531,23 +534,17 @@ function init3DMolViewer(data) {
     if (mainColorSelect) mainColorSelect.value = currentColor;
     if (sideColorSelect) sideColorSelect.value = currentColor;
     
-    // Set up colors
+    // 3Dmol's `colorscheme` field expects a built-in scheme NAME (string),
+    // not the elementColors lookup object — passing the object yields
+    // "Could not interpret colorscheme [object Object]".
     let colorConfig;
     switch (currentColor) {
-        case 'carbon':
-            colorConfig = $3Dmol.elementColors.greenCarbon;
-            break;
-        case 'spectrum':
-            colorConfig = $3Dmol.elementColors.rasmol;
-            break;
-        case 'white':
-            colorConfig = {default: 'white'};
-            break;
-        default:
-            colorConfig = $3Dmol.elementColors.Jmol;
+        case 'carbon':   colorConfig = 'greenCarbon'; break;
+        case 'spectrum': colorConfig = 'rasmol'; break;
+        case 'white':    colorConfig = { prop: 'elem', map: { default: 'white' } }; break;
+        default:         colorConfig = 'Jmol';
     }
-    
-    // Apply initial style with selected colors
+
     let styleConfig = {};
     if (currentStyle === 'stick') {
         styleConfig = {stick: {radius: 0.15, colorscheme: colorConfig}};
@@ -677,19 +674,13 @@ function update3DColor(colorValue = null) {
         let styleConfig = {};
         let colorConfig;
         
-        // Set up colors
+        // 3Dmol expects a built-in colorscheme name (string), not the
+        // elementColors lookup object. See update3DStyle for the same fix.
         switch (colorScheme) {
-            case 'carbon':
-                colorConfig = $3Dmol.elementColors.greenCarbon;
-                break;
-            case 'spectrum':
-                colorConfig = $3Dmol.elementColors.rasmol;
-                break;
-            case 'white':
-                colorConfig = {default: 'white'};
-                break;
-            default:
-                colorConfig = $3Dmol.elementColors.Jmol;
+            case 'carbon':   colorConfig = 'greenCarbon'; break;
+            case 'spectrum': colorConfig = 'rasmol'; break;
+            case 'white':    colorConfig = { prop: 'elem', map: { default: 'white' } }; break;
+            default:         colorConfig = 'Jmol';
         }
         
         // Apply style with new colors
@@ -780,7 +771,7 @@ function createSurfaceVisualization(data, smiles, container) {
                             <div class="space-y-3">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Style</label>
-                                    <select id="surface-style" onchange="syncAllStyleDropdowns(this.value)" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                    <select id="surface-style" data-viz-action="syncAllStyleDropdowns" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
                                         <option value="stick">Stick</option>
                                         <option value="sphere">Ball & Stick</option>
                                         <option value="line">Wireframe</option>
@@ -789,7 +780,7 @@ function createSurfaceVisualization(data, smiles, container) {
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Surface</label>
-                                    <select id="surface-type" onchange="updateSurfaceType()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                    <select id="surface-type" data-viz-action="updateSurfaceType" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
                                         <option value="vdw">Van der Waals</option>
                                         <option value="sas">Solvent Accessible</option>
                                         <option value="none">Hide Surface</option>
@@ -960,7 +951,7 @@ function createPharmacophoreVisualization(data, smiles, container) {
                             <div class="space-y-3">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Style</label>
-                                    <select id="pharmacophore-style" onchange="syncAllStyleDropdowns(this.value)" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                    <select id="pharmacophore-style" data-viz-action="syncAllStyleDropdowns" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
                                         <option value="stick">Stick</option>
                                         <option value="sphere">Ball & Stick</option>
                                         <option value="line">Wireframe</option>
@@ -969,7 +960,7 @@ function createPharmacophoreVisualization(data, smiles, container) {
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Features</label>
-                                    <select id="pharmacophore-features" onchange="updatePharmacophoreFeatures()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                    <select id="pharmacophore-features" data-viz-action="updatePharmacophoreFeatures" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
                                         <option value="all">Show All</option>
                                         <option value="donors">H-Donors Only</option>
                                         <option value="acceptors">H-Acceptors Only</option>
@@ -1151,7 +1142,7 @@ function createScaffoldVisualization(data, smiles, container) {
                             <div class="space-y-3">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Style</label>
-                                    <select id="scaffold-style" onchange="syncAllStyleDropdowns(this.value)" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                    <select id="scaffold-style" data-viz-action="syncAllStyleDropdowns" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
                                         <option value="stick">Stick</option>
                                         <option value="sphere">Ball & Stick</option>
                                         <option value="line">Wireframe</option>
@@ -1160,7 +1151,7 @@ function createScaffoldVisualization(data, smiles, container) {
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Color Scheme</label>
-                                    <select id="scaffold-color" onchange="updateScaffoldColor()" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                    <select id="scaffold-color" data-viz-action="updateScaffoldColor" class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
                                         <option value="scaffold">Scaffold Colors</option>
                                         <option value="default">By Element</option>
                                         <option value="spectrum">Spectrum</option>
@@ -1482,13 +1473,78 @@ async function generateThumbnail(smiles, vizType, data, galleryItem, timestamp) 
         <div class="text-xs text-gray-500 truncate">${smiles}</div>
         <div class="text-xs text-gray-400">${timestamp}</div>
     `;
-    
-    // Re-initialize icons for the placeholder
+
     if (window.lucide) lucide.createIcons();
-    
-    // Generate the actual thumbnail based on visualization type
+
+    // Try to grab the actual rendered PNG from the live 3Dmol viewer so the
+    // thumbnail reflects the user's chosen style / color / surface — not a
+    // generic synthesized SVG. The 3D / surface / pharm / scaffold viewers
+    // are constructed inside their own setTimeout in displayVisualization,
+    // so the global may not yet be populated when this runs. Poll for up
+    // to ~3 s, then fall back to the synthetic builder.
+    const viewerGlobalByType = {
+        '3d':            'current3DViewer',
+        'surface':       'currentSurfaceViewer',
+        'pharmacophore': 'currentPharmacophoreViewer',
+        'scaffold':      'currentScaffoldViewer',
+    };
+    const viewerKey = viewerGlobalByType[vizType];
+
+    if (viewerKey) {
+        const start = Date.now();
+        const tryCapture = () => {
+            const viewer = window[viewerKey];
+            if (viewer && typeof viewer.pngURI === 'function') {
+                try {
+                    const dataUri = viewer.pngURI();
+                    if (dataUri && dataUri.startsWith('data:image/')) {
+                        const badgeColor = {
+                            '3d':            'bg-blue-500',
+                            'surface':       'bg-green-500',
+                            'pharmacophore': 'bg-purple-500',
+                            'scaffold':      'bg-orange-500',
+                        }[vizType] || 'bg-gray-500';
+                        const badgeLabel = {
+                            '3d':            '3D',
+                            'surface':       'SURF',
+                            'pharmacophore': 'PHARM',
+                            'scaffold':      'SCAF',
+                        }[vizType] || vizType.toUpperCase();
+                        galleryItem.innerHTML = `
+                            <div class="aspect-square mb-2 relative bg-black rounded border overflow-hidden">
+                                <img src="${dataUri}" alt="${vizType} thumbnail"
+                                     class="w-full h-full object-contain"/>
+                                <div class="absolute bottom-1 right-1 ${badgeColor} text-white text-xs px-1 py-0.5 rounded text-[10px]">
+                                    ${badgeLabel}
+                                </div>
+                            </div>
+                            <div class="text-xs text-gray-600 truncate font-medium">${vizType.toUpperCase()}</div>
+                            <div class="text-xs text-gray-500 truncate">${smiles}</div>
+                            <div class="text-xs text-gray-400">${timestamp}</div>
+                        `;
+                        return;
+                    }
+                } catch (err) {
+                    console.warn(`[viz] pngURI() failed for ${vizType}:`, err);
+                }
+            }
+            if (Date.now() - start < 3000) {
+                setTimeout(tryCapture, 200);
+            } else {
+                buildSyntheticThumbnail(vizType, data, galleryItem, smiles, timestamp);
+            }
+        };
+        // Initial delay so the first render() inside the viewer-init
+        // setTimeout has a chance to paint before we snapshot.
+        setTimeout(tryCapture, 400);
+        return;
+    }
+
+    buildSyntheticThumbnail(vizType, data, galleryItem, smiles, timestamp);
+}
+
+function buildSyntheticThumbnail(vizType, data, galleryItem, smiles, timestamp) {
     const thumbnailId = `thumbnail-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
     if (vizType === '3d') {
         create3DThumbnail(data, galleryItem, thumbnailId, smiles, timestamp);
     } else if (vizType === 'surface') {
@@ -1498,7 +1554,6 @@ async function generateThumbnail(smiles, vizType, data, galleryItem, timestamp) 
     } else if (vizType === 'scaffold') {
         createScaffoldThumbnail(data, galleryItem, thumbnailId, smiles, timestamp);
     } else {
-        // Fallback for unknown types
         createFallbackThumbnail(galleryItem, vizType, data, smiles, timestamp);
     }
 }
@@ -2126,12 +2181,12 @@ function createFullscreen3DLayout() {
                     <code class="text-sm bg-gray-800 px-2 py-1 rounded">${document.getElementById('viz-input').value}</code>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <select id="fs-3d-style" onchange="update3DStyle(this.value)" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                    <select id="fs-3d-style" data-viz-action="update3DStyle" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
                         <option value="stick">Stick</option>
                         <option value="sphere">Ball & Stick</option>
                         <option value="line">Wireframe</option>
                     </select>
-                    <select id="fs-3d-color" onchange="update3DColor(this.value)" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                    <select id="fs-3d-color" data-viz-action="update3DColor" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
                         <option value="default">By Element</option>
                         <option value="carbon">Carbon</option>
                         <option value="spectrum">Spectrum</option>
@@ -2176,13 +2231,13 @@ function createFullscreenSurfaceLayout() {
                     <code class="text-sm bg-gray-800 px-2 py-1 rounded">${smiles}</code>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <select id="fs-surface-style" onchange="syncAllStyleDropdowns(this.value)" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                    <select id="fs-surface-style" data-viz-action="syncAllStyleDropdowns" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
                         <option value="stick">Stick</option>
                         <option value="sphere">Ball & Stick</option>
                         <option value="line">Wireframe</option>
                         <option value="cross">Cross</option>
                     </select>
-                    <select id="fs-surface-type" onchange="updateSurfaceType()" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                    <select id="fs-surface-type" data-viz-action="updateSurfaceType" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
                         <option value="vdw">VdW Surface</option>
                         <option value="sas">SAS Surface</option>
                         <option value="none">No Surface</option>
@@ -2247,13 +2302,13 @@ function createFullscreenPharmacophoreLayout() {
                     <code class="text-sm bg-gray-800 px-2 py-1 rounded">${smiles}</code>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <select id="fs-pharmacophore-style" onchange="syncAllStyleDropdowns(this.value)" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                    <select id="fs-pharmacophore-style" data-viz-action="syncAllStyleDropdowns" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
                         <option value="stick">Stick</option>
                         <option value="sphere">Ball & Stick</option>
                         <option value="line">Wireframe</option>
                         <option value="cross">Cross</option>
                     </select>
-                    <select id="fs-pharmacophore-features" onchange="updatePharmacophoreFeatures()" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                    <select id="fs-pharmacophore-features" data-viz-action="updatePharmacophoreFeatures" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
                         <option value="all">All Features</option>
                         <option value="donors">H-Donors</option>
                         <option value="acceptors">H-Acceptors</option>
@@ -2340,13 +2395,13 @@ function createFullscreenScaffoldLayout() {
                     <code class="text-sm bg-gray-800 px-2 py-1 rounded">${smiles}</code>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <select id="fs-scaffold-style" onchange="syncAllStyleDropdowns(this.value)" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                    <select id="fs-scaffold-style" data-viz-action="syncAllStyleDropdowns" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
                         <option value="stick">Stick</option>
                         <option value="sphere">Ball & Stick</option>
                         <option value="line">Wireframe</option>
                         <option value="cross">Cross</option>
                     </select>
-                    <select id="fs-scaffold-color" onchange="updateScaffoldColor()" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
+                    <select id="fs-scaffold-color" data-viz-action="updateScaffoldColor" class="px-2 py-1 bg-gray-800 text-white rounded text-sm border border-gray-600">
                         <option value="scaffold">Scaffold Colors</option>
                         <option value="default">By Element</option>
                     </select>
@@ -2616,4 +2671,33 @@ if (window.NuGenUtils && typeof window.NuGenUtils.registerAction === "function")
   window.NuGenUtils.registerAction("resetPharmacophoreView", resetPharmacophoreView);
   window.NuGenUtils.registerAction("resetScaffoldView", resetScaffoldView);
 }
+
+// Delegated change-handler for the dynamic 3D / surface / pharmacophore /
+// scaffold control panels. CSP forbids inline `onchange=` (Phase 5), so
+// every <select data-viz-action="X"> dispatches through this single
+// listener which calls the named function with the current value.
+const VIZ_ACTIONS = {
+  syncAllStyleDropdowns,
+  update3DStyle,
+  update3DColor,
+  updateSurfaceType,
+  updatePharmacophoreFeatures,
+  updateScaffoldColor,
+};
+document.addEventListener("change", (e) => {
+  const t = e.target;
+  if (!t || !(t instanceof Element)) return;
+  const name = t.getAttribute("data-viz-action");
+  if (!name) return;
+  const fn = VIZ_ACTIONS[name];
+  if (typeof fn !== "function") {
+    console.warn(`[viz] no such viz-action: ${name}`);
+    return;
+  }
+  try {
+    fn(t.value);
+  } catch (err) {
+    console.error(`[viz] ${name} threw:`, err);
+  }
+});
 })();
