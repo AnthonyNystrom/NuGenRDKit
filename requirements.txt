@@ -1,10 +1,22 @@
+# Production dependencies. Pin majors; allow patch upgrades for security
+# fixes. Dev-only tools (pytest, ruff, playwright) live in
+# requirements-dev.txt. matplotlib is a transitive RDKit visualisation dep
+# kept here so /api/v1/visualization/similarity_map can render PNG.
+
 Flask==3.0.0
 flask-cors==4.0.0
+flask-limiter>=3.5.0,<4
+gunicorn>=21,<23
+python-dotenv>=1,<2
+python-json-logger>=2,<3
+
 rdkit==2025.3.5
 numpy>=1.24.0
 Pillow>=9.0.0
-requests>=2.28.0
-flask-limiter>=3.5.0
-marshmallow>=3.20.0
-pytest>=7.0.0
 matplotlib>=3.10.0
+requests>=2.28.0
+
+# Phase 7 OpenAPI generation — wraps Flask blueprints with marshmallow
+# schemas to produce /api/v1/openapi.json + Swagger UI at /api/v1/docs.
+flask-smorest>=0.42,<1
+marshmallow>=3.20.0

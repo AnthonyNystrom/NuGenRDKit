@@ -1,0 +1,48 @@
+# Keep the build context lean — every file copied makes `docker build`
+# slower and bloats the layer cache invalidation surface.
+
+# VCS + IDE
+.git
+.gitattributes
+.gitignore
+.github
+.vscode
+.idea
+*.swp
+
+# Python build / cache
+__pycache__/
+*.py[co]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# Tests + dev tooling — not needed at runtime.
+tests/
+.pre-commit-config.yaml
+requirements-dev.txt
+
+# Local secrets / scratch
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+*.bak
+
+# Docs + screenshots — keep out of the runtime image.
+README.md
+UPGRADE_PLAN.md
+docs/
+nugenrdkit.png
+
+# OS junk
+.DS_Store
+Thumbs.db

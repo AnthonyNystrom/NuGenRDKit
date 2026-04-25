@@ -1,0 +1,82 @@
+[project]
+name = "nugenrdkit"
+version = "1.0.0"
+description = "Modern web interface for RDKit cheminformatics"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    # Skip the slow suite by default; run `pytest -m slow` explicitly.
+    "-m", "not slow",
+]
+markers = [
+    "slow: long-running RDKit operations (3D embeds, conformer search)",
+]
+filterwarnings = [
+    # RDKit emits a wall of deprecation messages at import time; we suppress
+    # them identically to app.py:14-21 so the test log is readable.
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore:.*MorganGenerator.*",
+]
+
+[tool.coverage.run]
+source = ["routes", "utils", "app"]
+omit = [
+    "tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+skip_covered = false
+precision = 1
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [
+    "nugenrdkit.png",
+    "tests/visual/baseline",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "C4",  # comprehensions
+    "SIM", # simplify
+]
+ignore = [
+    # Phase-0 concessions; Phase 1/2 will drop these as the code is cleaned.
+    "E501",  # line-length is enforced by the formatter, not the linter
+    "B008",  # function call in default arg (Flask `current_app` pattern)
+    "SIM108", # ternary-over-if is a style preference, not a defect
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]  # asserts in tests are fine
+# Phase 7 cleared all of E722, F841, B007, B905, C401, C414 from
+# routes/. The single SIM222 remaining is a deliberate TODO marker
+# (`if matches_template or True:`) inline-suppressed at the call site.
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

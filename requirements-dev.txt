@@ -1,0 +1,23 @@
+# Development + test dependencies. NOT installed in the production
+# Docker image. Installed in CI for the lint/test/docker-build jobs and
+# locally with: pip install -r requirements-dev.txt
+
+# Production deps so a single `pip install -r requirements-dev.txt`
+# brings up a working dev environment.
+-r requirements.txt
+
+# Test runner + coverage gate (see pyproject.toml [tool.coverage]).
+pytest>=7,<9
+pytest-cov>=4,<6
+
+# Linter + formatter. Pinned to the same major used by the pre-commit
+# hook (.pre-commit-config.yaml) so local + CI run the same rules.
+ruff>=0.5,<1.0
+pre-commit>=3,<5
+
+# Visual regression baseline + UI smoke (tests/visual/take_baseline.py).
+# Browser binary is installed separately with `playwright install chromium`.
+playwright>=1.40,<2
+
+# Phase 0 baseline diff helper — read PNGs and compare bounding boxes.
+Pillow>=9.0.0

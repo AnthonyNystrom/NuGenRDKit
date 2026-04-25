@@ -1,0 +1,35 @@
+{# ===================================================================
+   _sidebar.html — alternative left-rail navigation (Phase-4 stub)
+   ===================================================================
+   Not currently included by base.html. The active layout uses the
+   topbar (_topbar.html) for nav. This partial exists so a future
+   redesign can switch to a sidebar layout without rewriting the
+   nav catalog.
+
+   Same nav items, same active-state logic. Width: 220px when shown.
+#}
+
+<aside class="hidden lg:block bg-white border-r border-gray-200 w-56 shadow-sm" aria-label="Tool navigation">
+    <nav class="p-4 space-y-1">
+        {% set nav_items = [
+            ('index', 'Home', 'home'),
+            ('structure', 'Structure', 'box'),
+            ('descriptors', 'Descriptors', 'bar-chart-3'),
+            ('fingerprints', 'Fingerprints', 'fingerprint'),
+            ('similarity', 'Similarity', 'search'),
+            ('coordinates', '3D Coords', 'box'),
+            ('properties', 'Properties', 'flask-conical'),
+            ('reactions', 'Reactions', 'zap'),
+            ('visualization', 'Visualization', 'image')
+        ] %}
+        {% for route, name, icon in nav_items %}
+            <a href="{{ url_for(route) }}"
+               class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                      {% if request.endpoint == route %}text-primary-600 bg-primary-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-100{% endif %}"
+               {% if request.endpoint == route %}aria-current="page"{% endif %}>
+                <i data-lucide="{{ icon }}" class="w-4 h-4 flex-shrink-0"></i>
+                <span>{{ name }}</span>
+            </a>
+        {% endfor %}
+    </nav>
+</aside>

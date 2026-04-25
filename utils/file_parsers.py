@@ -3,16 +3,16 @@ File parsing utilities for chemistry file formats
 Supports: .smi, .smiles, .sdf, .mol, .csv, .tsv, .txt, .rxn
 """
 
-from rdkit import Chem
-import logging
 import csv
 import io
-from typing import List, Dict, Tuple, Optional
+import logging
+
+from rdkit import Chem
 
 logger = logging.getLogger(__name__)
 
 
-def parse_smiles_file(file_content: str) -> List[Dict[str, str]]:
+def parse_smiles_file(file_content: str) -> list[dict[str, str]]:
     """
     Parse SMILES file format (.smi, .smiles, .txt)
     Format: SMILES [ID/Name] (tab or space separated)
@@ -20,15 +20,15 @@ def parse_smiles_file(file_content: str) -> List[Dict[str, str]]:
     Returns list of dicts with 'smiles' and optional 'name'
     """
     molecules = []
-    lines = file_content.strip().split('\n')
+    lines = file_content.strip().split("\n")
 
     for line_num, line in enumerate(lines, 1):
         line = line.strip()
-        if not line or line.startswith('#'):  # Skip empty lines and comments
+        if not line or line.startswith("#"):  # Skip empty lines and comments
             continue
 
         # Try tab-separated first, then space-separated
-        parts = line.split('\t') if '\t' in line else line.split(None, 1)
+        parts = line.split("\t") if "\t" in line else line.split(None, 1)
 
         smiles = parts[0].strip()
         name = parts[1].strip() if len(parts) > 1 else f"Molecule_{line_num}"
@@ -39,16 +39,12 @@ def parse_smiles_file(file_content: str) -> List[Dict[str, str]]:
             logger.warning(f"Invalid SMILES on line {line_num}: {smiles}")
             continue
 
-        molecules.append({
-            'smiles': smiles,
-            'name': name,
-            'line_number': line_num
-        })
+        molecules.append({"smiles": smiles, "name": name, "line_number": line_num})
 
     return molecules
 
 
-def parse_sdf_file(file_content: str) -> List[Dict[str, str]]:
+def parse_sdf_file(file_content: str) -> list[dict[str, str]]:
     """
     Parse SDF file format (.sdf)
 
@@ -73,21 +69,22 @@ def parse_sdf_file(file_content: str) -> List[Dict[str, str]]:
         # Extract all properties
         properties = {}
         for prop_name in mol.GetPropNames():
-            if not prop_name.startswith('_'):  # Skip internal properties
+            if not prop_name.startswith("_"):  # Skip internal properties
                 properties[prop_name] = mol.GetProp(prop_name)
 
-        molecules.append({
-            'smiles': smiles,
-            'name': name,
-            'mol_index': idx + 1,
-            'properties': properties
-        })
+        molecules.append(
+            {"smiles": smiles, "name": name, "mol_index": idx + 1, "properties": properties}
+        )
 
     return molecules
 
 
-def parse_csv_file(file_content: str, smiles_column: Optional[str] = None,
-                   name_column: Optional[str] = None, delimiter: str = ',') -> List[Dict[str, str]]:
+def parse_csv_file(
+    file_content: str,
+    smiles_column: str | None = None,
+    name_column: str | None = None,
+    delimiter: str = ",",
+) -> list[dict[str, str]]:
     """
     Parse CSV/TSV file format (.csv, .tsv)
 
@@ -110,7 +107,15 @@ def parse_csv_file(file_content: str, smiles_column: Optional[str] = None,
 
     # Auto-detect SMILES column
     if smiles_column is None:
-        possible_names = ['smiles', 'SMILES', 'Smiles', 'smile', 'SMILE', 'canonical_smiles', 'structure']
+        possible_names = [
+            "smiles",
+            "SMILES",
+            "Smiles",
+            "smile",
+            "SMILE",
+            "canonical_smiles",
+            "structure",
+        ]
         for name in possible_names:
             if name in reader.fieldnames:
                 smiles_column = name
@@ -119,11 +124,13 @@ def parse_csv_file(file_content: str, smiles_column: Optional[str] = None,
         if smiles_column is None:
             # Use first column as default
             smiles_column = reader.fieldnames[0]
-            logger.warning(f"Could not auto-detect SMILES column, using first column: {smiles_column}")
+            logger.warning(
+                f"Could not auto-detect SMILES column, using first column: {smiles_column}"
+            )
 
     # Auto-detect name column
     if name_column is None:
-        possible_names = ['name', 'Name', 'NAME', 'id', 'ID', 'Id', 'compound_id', 'molecule_name']
+        possible_names = ["name", "Name", "NAME", "id", "ID", "Id", "compound_id", "molecule_name"]
         for name in possible_names:
             if name in reader.fieldnames:
                 name_column = name
@@ -150,17 +157,14 @@ def parse_csv_file(file_content: str, smiles_column: Optional[str] = None,
         # Include all other columns as properties
         properties = {k: v for k, v in row.items() if k not in [smiles_column, name_column]}
 
-        molecules.append({
-            'smiles': smiles,
-            'name': name,
-            'row_number': row_num,
-            'properties': properties
-        })
+        molecules.append(
+            {"smiles": smiles, "name": name, "row_number": row_num, "properties": properties}
+        )
 
     return molecules
 
 
-def parse_mol_file(file_content: str) -> Dict[str, str]:
+def parse_mol_file(file_content: str) -> dict[str, str]:
     """
     Parse single MOL file format (.mol)
 
@@ -177,24 +181,25 @@ def parse_mol_file(file_content: str) -> Dict[str, str]:
     # Extract properties
     properties = {}
     for prop_name in mol.GetPropNames():
-        if not prop_name.startswith('_'):
+        if not prop_name.startswith("_"):
             properties[prop_name] = mol.GetProp(prop_name)
 
-    return {
-        'smiles': smiles,
-        'name': name,
-        'properties': properties
-    }
+    return {"smiles": smiles, "name": name, "properties": properties}
 
 
-def parse_rxn_file(file_content: str) -> Dict[str, any]:
+def parse_rxn_file(file_content: str) -> dict[str, any]:
     """
     Parse RXN file format (.rxn) - MDL Reaction format
 
     Returns dict with 'reactants', 'products', and reaction metadata
     """
     try:
-        rxn = Chem.ReactionFromRxnBlock(file_content)
+        # ReactionFromRxnBlock lives under AllChem (and rdChemReactions) in
+        # modern RDKit; the bare Chem.ReactionFromRxnBlock attribute that
+        # used to work was removed.
+        from rdkit.Chem import AllChem
+
+        rxn = AllChem.ReactionFromRxnBlock(file_content)
 
         if rxn is None:
             raise ValueError("Invalid RXN file format")
@@ -214,18 +219,18 @@ def parse_rxn_file(file_content: str) -> Dict[str, any]:
                 products.append(smiles)
 
         # Try to construct reaction SMARTS
-        reaction_smarts = '.'.join(reactants) + '>>' + '.'.join(products)
+        reaction_smarts = ".".join(reactants) + ">>" + ".".join(products)
 
         return {
-            'reactants': reactants,
-            'products': products,
-            'reaction_smarts': reaction_smarts,
-            'num_reactants': len(reactants),
-            'num_products': len(products)
+            "reactants": reactants,
+            "products": products,
+            "reaction_smarts": reaction_smarts,
+            "num_reactants": len(reactants),
+            "num_products": len(products),
         }
 
     except Exception as e:
-        raise ValueError(f"Error parsing RXN file: {str(e)}")
+        raise ValueError(f"Error parsing RXN file: {str(e)}") from e
 
 
 def detect_file_format(filename: str, file_content: str) -> str:
@@ -237,42 +242,43 @@ def detect_file_format(filename: str, file_content: str) -> str:
     filename_lower = filename.lower()
 
     # Check extension
-    if filename_lower.endswith('.smi') or filename_lower.endswith('.smiles'):
-        return 'smiles'
-    elif filename_lower.endswith('.sdf'):
-        return 'sdf'
-    elif filename_lower.endswith('.mol'):
-        return 'mol'
-    elif filename_lower.endswith('.csv'):
-        return 'csv'
-    elif filename_lower.endswith('.tsv') or filename_lower.endswith('.tab'):
-        return 'tsv'
-    elif filename_lower.endswith('.rxn'):
-        return 'rxn'
-    elif filename_lower.endswith('.txt'):
+    if filename_lower.endswith(".smi") or filename_lower.endswith(".smiles"):
+        return "smiles"
+    elif filename_lower.endswith(".sdf"):
+        return "sdf"
+    elif filename_lower.endswith(".mol"):
+        return "mol"
+    elif filename_lower.endswith(".csv"):
+        return "csv"
+    elif filename_lower.endswith(".tsv") or filename_lower.endswith(".tab"):
+        return "tsv"
+    elif filename_lower.endswith(".rxn"):
+        return "rxn"
+    elif filename_lower.endswith(".txt"):
         # Try to detect from content
-        if file_content.startswith('$$$$') or 'M  END' in file_content:
-            return 'sdf'
-        elif '\t' in file_content:
-            return 'tsv'
+        if file_content.startswith("$$$$") or "M  END" in file_content:
+            return "sdf"
+        elif "\t" in file_content:
+            return "tsv"
         else:
-            return 'smiles'
+            return "smiles"
 
     # Fallback: try to detect from content
-    if file_content.startswith('$$$$') or 'M  END' in file_content:
-        return 'sdf'
-    elif '$RXN' in file_content[:100]:
-        return 'rxn'
-    elif ',' in file_content and '\n' in file_content:
-        return 'csv'
-    elif '\t' in file_content:
-        return 'tsv'
+    if file_content.startswith("$$$$") or "M  END" in file_content:
+        return "sdf"
+    elif "$RXN" in file_content[:100]:
+        return "rxn"
+    elif "," in file_content and "\n" in file_content:
+        return "csv"
+    elif "\t" in file_content:
+        return "tsv"
     else:
-        return 'smiles'
+        return "smiles"
 
 
-def parse_molecule_file(filename: str, file_content: str,
-                       file_format: Optional[str] = None) -> List[Dict[str, str]]:
+def parse_molecule_file(
+    filename: str, file_content: str, file_format: str | None = None
+) -> list[dict[str, str]]:
     """
     Universal molecule file parser
 
@@ -289,15 +295,15 @@ def parse_molecule_file(filename: str, file_content: str,
     logger.info(f"Parsing file '{filename}' as format: {file_format}")
 
     try:
-        if file_format == 'smiles' or file_format == 'txt':
+        if file_format == "smiles" or file_format == "txt":
             molecules = parse_smiles_file(file_content)
-        elif file_format == 'sdf':
+        elif file_format == "sdf":
             molecules = parse_sdf_file(file_content)
-        elif file_format == 'csv':
-            molecules = parse_csv_file(file_content, delimiter=',')
-        elif file_format == 'tsv':
-            molecules = parse_csv_file(file_content, delimiter='\t')
-        elif file_format == 'mol':
+        elif file_format == "csv":
+            molecules = parse_csv_file(file_content, delimiter=",")
+        elif file_format == "tsv":
+            molecules = parse_csv_file(file_content, delimiter="\t")
+        elif file_format == "mol":
             mol_data = parse_mol_file(file_content)
             molecules = [mol_data]  # Return as single-item list
         else:
@@ -308,7 +314,7 @@ def parse_molecule_file(filename: str, file_content: str,
 
     except Exception as e:
         logger.error(f"Error parsing file '{filename}': {str(e)}")
-        raise ValueError(f"Failed to parse file: {str(e)}")
+        raise ValueError(f"Failed to parse file: {str(e)}") from e
 
 
 def validate_file_size(file_size_bytes: int, max_size_mb: int = 50) -> bool:
@@ -324,7 +330,9 @@ def validate_file_size(file_size_bytes: int, max_size_mb: int = 50) -> bool:
     max_size_bytes = max_size_mb * 1024 * 1024
 
     if file_size_bytes > max_size_bytes:
-        raise ValueError(f"File size ({file_size_bytes / (1024*1024):.1f} MB) exceeds maximum allowed size ({max_size_mb} MB)")
+        raise ValueError(
+            f"File size ({file_size_bytes / (1024 * 1024):.1f} MB) exceeds maximum allowed size ({max_size_mb} MB)"
+        )
 
     return True
 

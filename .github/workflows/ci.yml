@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# All jobs run in parallel; the `docker` job at the bottom only runs
+# after lint+test+js pass so we don't push a broken image.
+jobs:
+  # --------------------------------------------------------------------- #
+  # Static analysis
+  # --------------------------------------------------------------------- #
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install ruff
+        run: pip install 'ruff==0.5.*'
+      - name: ruff check
+        run: ruff check .
+      - name: ruff format --check
+        run: ruff format --check .
+
+  # --------------------------------------------------------------------- #
+  # Python unit + integration tests across versions
+  # --------------------------------------------------------------------- #
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run pytest (fast suite, with coverage)
+        run: |
+          pytest -v \
+            --cov \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=40
+
+      - name: Run pytest (slow suite)
+        if: matrix.python-version == '3.11'
+        run: pytest -v -m slow
+
+      - name: Upload coverage report
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 14
+
+  # --------------------------------------------------------------------- #
+  # JS unit tests (Node, no npm deps)
+  # --------------------------------------------------------------------- #
+  js:
+    name: JS unit tests (formatters + ResultsCard + Workspace)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run JS harness
+        run: node tests/formatters/run.js
+
+  # --------------------------------------------------------------------- #
+  # Build the production Docker image and verify it boots + responds
+  # --------------------------------------------------------------------- #
+  docker:
+    name: Docker build + smoke
+    runs-on: ubuntu-latest
+    needs: [lint, test, js]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          load: true
+          tags: nugenrdkit:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run image
+        run: |
+          docker run -d --name nugenrdkit-ci -p 8000:8000 \
+            -e LOG_LEVEL=WARNING \
+            nugenrdkit:ci
+          # Wait for the container to become healthy.
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/health; then
+              echo
+              echo "image responded"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "image did not respond in 60s — dumping logs:" >&2
+          docker logs nugenrdkit-ci
+          exit 1
+
+      - name: Stop image
+        if: always()
+        run: docker rm -f nugenrdkit-ci || true

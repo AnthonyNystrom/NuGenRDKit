@@ -1,0 +1,48 @@
+# docker-compose.yml — Phase 6 development & demo.
+#
+# Single `app` service. The Phase-6 plan deliberately omits Redis: the
+# rate limiter uses in-memory storage, gunicorn runs a single worker
+# (see gunicorn.conf.py), and the deployment guide documents the
+# constraint. To scale horizontally, add a redis service here and set
+# RATELIMIT_STORAGE_URI=redis://redis:6379/0 in `environment:`.
+#
+# Usage:
+#   docker compose up --build       # rebuild image and run on :8000
+#   docker compose up -d            # detached mode
+#   docker compose logs -f app
+#
+# The Compose file is meant for local dev and self-hosted single-box
+# deploys. Production behind a load balancer should use the published
+# image (Phase 6 ci.yml `docker` job) + a managed orchestrator.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nugenrdkit:local
+    container_name: nugenrdkit
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Sensible production defaults; override via .env if needed.
+      FLASK_ENV: production
+      LOG_LEVEL: INFO
+      HOST: 0.0.0.0
+      PORT: "8000"
+      MAX_UPLOAD_MB: "50"
+      RATE_LIMIT_DEFAULT: "100/minute;1000/hour"
+      RATE_LIMIT_EXPENSIVE: "10/minute;100/hour"
+      RATE_LIMIT_BULK: "5/minute;50/hour"
+      # Set CORS_ORIGINS at deploy time; empty here ⇒ no cross-origin access.
+      CORS_ORIGINS: ""
+    env_file:
+      - path: .env
+        required: false
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

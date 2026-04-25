@@ -1,0 +1,113 @@
+{# ===================================================================
+   _topbar.html — site navigation bar
+   ===================================================================
+   Phase-4 invariant: this partial emits the *exact* markup that
+   templates/base.html lines 82-190 currently inline. Phase 5 will
+   replace the inline block with `{% include "_partials/_topbar.html" %}`
+   and rely on the Phase-0 oracle (test_routes_ok + Playwright baseline)
+   to confirm zero visual drift.
+
+   The topbar carries 9 tool nav links + a status pill + a mobile menu
+   button. Active state highlights the current `request.endpoint`.
+
+   The molecule SVG inside the brand mark intentionally duplicates the
+   one in the footer; consolidation is out of scope here (would require
+   a separate _brand.html partial). #}
+
+<nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Logo and Mobile Menu Button Row -->
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center">
+                <a href="{{ url_for('index') }}" class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
+                        <!-- Molecule icon matching favicon -->
+                        <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="2.5" fill="white"/>
+                            <circle cx="16" cy="9" r="2" fill="white"/>
+                            <circle cx="22" cy="12.5" r="2" fill="white"/>
+                            <circle cx="22" cy="19.5" r="2" fill="white"/>
+                            <circle cx="16" cy="23" r="2" fill="white"/>
+                            <circle cx="10" cy="19.5" r="2" fill="white"/>
+                            <circle cx="10" cy="12.5" r="2" fill="white"/>
+                            <line x1="16" y1="16" x2="16" y2="9" stroke="white" stroke-width="1.5"/>
+                            <line x1="16" y1="16" x2="22" y2="12.5" stroke="white" stroke-width="1.5"/>
+                            <line x1="16" y1="16" x2="22" y2="19.5" stroke="white" stroke-width="1.5"/>
+                            <line x1="16" y1="16" x2="16" y2="23" stroke="white" stroke-width="1.5"/>
+                            <line x1="16" y1="16" x2="10" y2="19.5" stroke="white" stroke-width="1.5"/>
+                            <line x1="16" y1="16" x2="10" y2="12.5" stroke="white" stroke-width="1.5"/>
+                            <line x1="14.5" y1="15" x2="14.5" y2="10" stroke="white" stroke-width="1" opacity="0.7"/>
+                        </svg>
+                    </div>
+                    <span class="text-xl font-semibold text-gray-900">NuGenRDKit</span>
+                </a>
+            </div>
+
+            <!-- Mobile Menu Button (Phase 7 dropped the stale
+                 "Checking..." status pill — see base.html). -->
+            <div class="flex items-center space-x-4">
+                <div class="lg:hidden flex items-center">
+                    <button id="mobile-menu-button" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100" aria-label="Open menu" aria-controls="mobile-menu" aria-expanded="false">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop Navigation - Multiple Lines -->
+        <div class="hidden lg:block pb-3">
+            {% set nav_items = [
+                ('index', 'Home', 'home'),
+                ('structure', 'Structure', 'box'),
+                ('descriptors', 'Descriptors', 'bar-chart-3'),
+                ('fingerprints', 'Fingerprints', 'fingerprint'),
+                ('similarity', 'Similarity', 'search'),
+                ('coordinates', '3D Coords', 'box'),
+                ('properties', 'Properties', 'flask-conical'),
+                ('reactions', 'Reactions', 'zap'),
+                ('visualization', 'Visualization', 'image')
+            ] %}
+
+            <!-- First Row - Main Tools -->
+            <div class="flex flex-wrap items-center justify-center space-x-2 space-y-1 py-2">
+                {% for route, name, icon in nav_items %}
+                    <a href="{{ url_for(route) }}"
+                       class="nav-link flex items-center space-x-2 px-3 py-2 m-1 rounded-lg text-sm font-medium transition-colors hover:bg-gray-100
+                              {% if request.endpoint == route %}text-primary-600 bg-primary-50 shadow-sm{% else %}text-gray-600{% endif %}"
+                       {% if request.endpoint == route %}aria-current="page"{% endif %}>
+                        <i data-lucide="{{ icon }}" class="w-4 h-4"></i>
+                        <span>{{ name }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="lg:hidden hidden border-t border-gray-200 bg-white">
+        <div class="px-2 pt-2 pb-3">
+            {% set mobile_nav_items = [
+                ('index', 'Home', 'home'),
+                ('structure', 'Structure', 'box'),
+                ('descriptors', 'Descriptors', 'bar-chart-3'),
+                ('fingerprints', 'Fingerprints', 'fingerprint'),
+                ('similarity', 'Similarity', 'search'),
+                ('coordinates', '3D Coords', 'box'),
+                ('properties', 'Properties', 'flask-conical'),
+                ('reactions', 'Reactions', 'zap'),
+                ('visualization', 'Visualization', 'image')
+            ] %}
+
+            <div class="grid grid-cols-2 gap-2">
+                {% for route, name, icon in mobile_nav_items %}
+                    <a href="{{ url_for(route) }}"
+                       class="mobile-nav-link flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors
+                              {% if request.endpoint == route %}text-primary-600 bg-primary-50 border border-primary-200{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-transparent{% endif %}">
+                        <i data-lucide="{{ icon }}" class="w-4 h-4 flex-shrink-0"></i>
+                        <span class="truncate">{{ name }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</nav>

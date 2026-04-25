@@ -89,6 +89,104 @@ A comprehensive, production-ready web application providing an intuitive interfa
 
 5. **Start exploring!** 🧬 Try converting SMILES, generating 3D structures, or analyzing molecular properties.
 
+## 🚢 Production Deployment
+
+The Flask development server is fine for local exploration but should never be used in production. NuGenRDKit ships a multi-stage `Dockerfile`, a tuned `gunicorn.conf.py`, and a `docker-compose.yml` for self-hosted deployment.
+
+### Docker (recommended)
+
+```bash
+# Build and run on :8000
+docker compose up --build
+
+# Or directly:
+docker build -t nugenrdkit:1.0.0 .
+docker run -d --name nugenrdkit -p 8000:8000 \
+    -e LOG_LEVEL=INFO \
+    -e CORS_ORIGINS=https://app.example.com \
+    -e SECRET_KEY="$(openssl rand -hex 32)" \
+    nugenrdkit:1.0.0
+```
+
+The image runs gunicorn as a non-root user, exposes port 8000, and ships a `HEALTHCHECK` that pings `/health` every 30 s. CI verifies the image boots and responds (`docker` job in [.github/workflows/ci.yml](.github/workflows/ci.yml)).
+
+### Bare-metal / systemd
+
+```bash
+pip install -r requirements.txt
+gunicorn --config gunicorn.conf.py app:app
+```
+
+Run behind nginx / Traefik / Cloudflare for TLS. Set `FORWARDED_ALLOW_IPS` (env var, see `gunicorn.conf.py`) to your reverse-proxy IP so request logging records the real client.
+
+### Single-worker constraint ⚠
+
+The default config runs **one** gunicorn worker (with 4 threads) because the rate limiter uses in-memory storage. Adding a second worker silently doubles each rate-limit budget. To scale horizontally:
+
+1. Add a Redis service (e.g. uncomment one in `docker-compose.yml`).
+2. Set `RATELIMIT_STORAGE_URI=redis://redis:6379/0`.
+3. Bump `GUNICORN_WORKERS` (or edit `gunicorn.conf.py`).
+
+## ⚙️ Configuration
+
+All runtime configuration lives in environment variables (loaded from `.env` via python-dotenv if present). See `.env.example` for the canonical list.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `HOST` | `0.0.0.0` | Bind address (dev server only — gunicorn reads `GUNICORN_BIND`). |
+| `PORT` | `8000` | Bind port. |
+| `LOG_LEVEL` | `INFO` | Root logger level. `DEBUG` adds per-request lines for `/static/*`. |
+| `FLASK_ENV` | `production` | `development` relaxes CORS to `*` and skips HSTS. |
+| `SECRET_KEY` | random per-process | Required in production for any signed-cookie usage. Generate: `python -c "import secrets; print(secrets.token_hex(32))"`. |
+| `CORS_ORIGINS` | _(empty)_ | Comma-separated allowlist for `/api/*`. Empty in production = no cross-origin access. |
+| `MAX_UPLOAD_MB` | `50` | Hard cap on multipart upload size (Flask `MAX_CONTENT_LENGTH`). |
+| `RATE_LIMIT_DEFAULT` | `100/minute;1000/hour` | Default Flask-Limiter tier. |
+| `RATE_LIMIT_EXPENSIVE` | `10/minute;100/hour` | Tier for 3D embed, conformer search, MMFF, bulk similarity. |
+| `RATE_LIMIT_BULK` | `5/minute;50/hour` | Tier for `*/batch_file` and other large file uploads. |
+| `GUNICORN_WORKERS` | `1` | gunicorn worker count. **Don't bump above 1 unless you've migrated to Redis-backed rate limits.** |
+| `GUNICORN_THREADS` | `4` | Threads per worker (sync worker class). |
+| `GUNICORN_TIMEOUT` | `180` | Seconds before gunicorn kills a worker mid-request. Must exceed the longest legitimate RDKit call. |
+| `FORWARDED_ALLOW_IPS` | `127.0.0.1` | Trust `X-Forwarded-*` from these proxy IPs. Use `*` only on a private network. |
+| `GIT_SHA` | _(auto)_ | Override for `/health` `git_sha` field when running outside a git checkout (e.g. in a Docker layer). |
+
+### Health check
+
+`GET /health` returns:
+
+```json
+{
+  "success": true,
+  "status": "healthy",
+  "rdkit_working": true,
+  "versions": { "rdkit": "2025.03.5", "flask": "3.0.0", "python": "3.11.x" },
+  "git_sha": "00b54b8"
+}
+```
+
+Returns 503 with `status: "degraded"` if RDKit fails to round-trip a SMILES.
+
+## 🧪 Tests
+
+```bash
+# Python tests (fast suite — ~250 cases, <1 s):
+pip install -r requirements-dev.txt
+pytest
+
+# Slow suite (3D embed / conformer search):
+pytest -m slow
+
+# JS unit tests (no npm deps):
+node tests/formatters/run.js
+
+# Lint:
+ruff check . && ruff format --check .
+
+# Visual baseline (requires the app running on :8001):
+APP_URL=http://127.0.0.1:8001 python tests/visual/take_baseline.py --update
+```
+
+CI runs all of these on every PR ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+
 ## 💻 **Web Interface Highlights**
 
 The application features 9 integrated modules with modern, responsive design:

@@ -14,73 +14,35 @@
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Icons will be loaded via script tag at bottom of page -->
-    
-    <!-- Tailwind CSS -->
-    <script>
-        // Suppress Tailwind CDN production warning and WebGL framebuffer warnings
-        const originalWarn = console.warn;
-        const originalError = console.error;
-        
-        console.warn = function(...args) {
-            if (typeof args[0] === 'string' && 
-                (args[0].includes('cdn.tailwindcss.com should not be used in production') ||
-                 args[0].includes('tailwindcss.com should not be used in production'))) {
-                return;
-            }
-            originalWarn.apply(console, args);
-        };
-        
-        console.error = function(...args) {
-            if (typeof args[0] === 'string' && 
-                (args[0].includes('GL_INVALID_FRAMEBUFFER_OPERATION') ||
-                 args[0].includes('Framebuffer is incomplete: Attachment has zero size'))) {
-                return;
-            }
-            originalError.apply(console, args);
-        };
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'sans': ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            900: '#0c4a6e'
-                        },
-                        secondary: {
-                            50: '#f8fafc',
-                            100: '#f1f5f9',
-                            500: '#64748b',
-                            600: '#475569',
-                            700: '#334155',
-                            900: '#0f172a'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Custom CSS -->
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
-    
+
+    <!-- Design tokens + single component stylesheet. tokens.css must load
+         first — app.css consumes its CSS variables. Phase 5 deleted the
+         legacy style.css; everything it defined is now in app.css. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+
+    {# Phase 4 + 5: shared JS stack. Order matters — `utils.js` defines
+       `window.NuGenUtils` which the others reference at evaluation time.
+       All `defer` so they execute after HTML parse but before
+       DOMContentLoaded fires. Per-page modules are loaded via the
+       extra_scripts block in each template. #}
+    <script defer src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/formatters.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/workspace.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/results_card.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/topbar_search.js') }}"></script>
+
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-gray-50 font-sans antialiased">
+    {# Phase 7 a11y: skip link visible only when keyboard-focused. #}
+    <a href="#main-content"
+       class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded focus:bg-white focus:text-primary-700 focus:shadow-md">
+        Skip to main content
+    </a>
+
     <!-- Navigation -->
-    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50" aria-label="Primary">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Logo and Mobile Menu Button Row -->
             <div class="flex justify-between items-center h-16">
@@ -113,18 +75,18 @@
                     </a>
                 </div>
                 
-                <!-- Desktop Status and Mobile Menu Button -->
+                {# Phase 7 dropped the stale "Checking…" status pill that
+                   used to live here — it was wired to the deleted
+                   app.js health probe and confused users. /health
+                   remains available for monitoring tools. #}
                 <div class="flex items-center space-x-4">
-                    <!-- Status Indicator -->
-                    <div class="hidden sm:block">
-                        <span id="status-indicator" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            <div class="w-2 h-2 bg-gray-400 rounded-full mr-1.5"></div>Checking...
-                        </span>
-                    </div>
-                    
-                    <!-- Mobile menu button -->
                     <div class="lg:hidden flex items-center">
-                        <button id="mobile-menu-button" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                        <button id="mobile-menu-button"
+                                type="button"
+                                aria-label="Toggle navigation menu"
+                                aria-controls="mobile-menu"
+                                aria-expanded="false"
+                                class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
                             <i data-lucide="menu" class="w-6 h-6"></i>
                         </button>
                     </div>
@@ -190,7 +152,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-1">
+    <main id="main-content" class="flex-1" role="main" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
 
@@ -250,12 +212,9 @@
                 <p class="text-sm text-gray-500">
                     Powered by <a href="https://www.rdkit.org/" class="text-primary-600 hover:text-primary-700">RDKit</a>
                 </p>
-                <div class="mt-4 sm:mt-0 flex space-x-6">
-                    <span id="status-indicator" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        <div class="w-2 h-2 bg-green-400 rounded-full mr-1.5 animate-pulse"></div>
-                        Connected
-                    </span>
-                </div>
+                {# Phase 7: removed the hardcoded "Connected" pill — it
+                   wasn't wired to anything (always green regardless of
+                   actual API state) and duplicated the topbar id. #}
             </div>
             
             <!-- Copyright and License -->
@@ -265,8 +224,9 @@
                         <p>&copy; 2025 Anthony Nystrom. All rights reserved.</p>
                     </div>
                     <div class="flex items-center space-x-4">
-                        <a href="https://opensource.org/licenses/MIT" 
-                           target="_blank" 
+                        <a href="https://opensource.org/licenses/MIT"
+                           target="_blank"
+                           rel="noopener noreferrer"
                            class="text-primary-600 hover:text-primary-700 transition-colors flex items-center">
                             <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd"></path>
@@ -274,8 +234,9 @@
                             MIT License
                         </a>
                         <span class="text-gray-400">•</span>
-                        <a href="https://github.com/AnthonyNystrom/NuGenRDKit" 
-                           target="_blank" 
+                        <a href="https://github.com/AnthonyNystrom/NuGenRDKit"
+                           target="_blank"
+                           rel="noopener noreferrer"
                            class="text-primary-600 hover:text-primary-700 transition-colors">
                             Open Source
                         </a>
@@ -285,22 +246,27 @@
         </div>
     </footer>
 
-    <!-- Scripts -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <!-- 3Dmol.js for 3D molecular visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/3dmol@2.0.4/build/3Dmol.js"></script>
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-    <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
-        
-        // Mobile menu toggle
-        document.getElementById('mobile-menu-button').addEventListener('click', function() {
-            const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
-        });
-    </script>
-    
+    <!-- External CDN scripts.
+         lucide is needed on every page (icons in nav + content). 3Dmol
+         (~500 KB) is only needed on /coordinates and /visualization —
+         those pages add their own <script> via the page_scripts block
+         below, so the bytes don't ship to the other 7 pages.
+         lucide is pinned to a specific version and locked with an SRI
+         integrity hash. Phase-7 polish may migrate to a self-hosted bundle. -->
+    <script src="https://unpkg.com/lucide@1.11.0/dist/umd/lucide.min.js"
+            integrity="sha384-7PArHXNzg1s/WgbAH9xkBpx4T6MJ0jPAxaEM9yld+zvdFEjSf+wzzv0hDnem/6rw"
+            crossorigin="anonymous"></script>
+
+    {# Phase 5: lucide icon-init + mobile menu wiring extracted from an
+       inline <script> into base_init.js. With every page now CSP-clean,
+       utils/config.py drops 'unsafe-inline' from script-src. #}
+    <script src="{{ url_for('static', filename='js/base_init.js') }}"></script>
+
+    {# Per-page scripts (Phase 5).
+       Pages that need 3Dmol (coordinates, visualization) override this
+       block; everyone else inherits the empty default. #}
+    {% block page_scripts %}{% endblock %}
+
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

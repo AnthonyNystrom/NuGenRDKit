@@ -35,3 +35,8 @@ logs/
 build/
 dist/
 *.egg-info/
+
+# Markdown — README is the only doc we ship in the repo. Anything else
+# (planning docs, in-flight notes, AI-session memory) stays local.
+*.md
+!README.md
