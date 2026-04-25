@@ -5,7 +5,7 @@ repos:
       - id: trailing-whitespace
         exclude: ^(example_molecules\.smi|tests/visual/baseline/)
       - id: end-of-file-fixer
-        exclude: ^(nugenrdkit\.png|tests/visual/baseline/)
+        exclude: ^(docs/img/|tests/visual/baseline/)
       - id: check-yaml
       - id: check-json
       - id: check-toml
@@ -15,7 +15,11 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.0
+    # Bumped from v0.5.0 — that release is over a year old and its
+    # rules / format style diverge from current ruff, so files clean
+    # locally fail the pre-commit hook AND the matching CI lint job.
+    # Keep this in sync with the CI lint pin in .github/workflows/ci.yml.
+    rev: v0.15.0
     hooks:
       - id: ruff
         args: [--fix]

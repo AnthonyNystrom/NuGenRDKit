@@ -2,8 +2,6 @@
 
 A chemist-first web interface for RDKit. Production-grade Flask backend, dense data-first UI, and a REST API that mirrors the surface of the underlying RDKit toolkit.
 
-![NuGenRDKit dashboard](nugenrdkit.png)
-
 ---
 
 ## What it does
@@ -40,79 +38,27 @@ The UI is designed for working chemists rather than tutorial readers: a 220 px p
 
 ---
 
-## Features in action
+## Screenshots
 
-### Visualization
+The chemist dashboard — quick analysis, recent molecules, jump-to-tool tiles, system status:
 
-Interactive 3D rendering with 3Dmol.js — Van der Waals surfaces, ball-and-stick models, pharmacophore feature mapping. Style and surface dropdowns update the live viewer; gallery thumbnails are real PNG snapshots of the actual render, not synthetic placeholders.
+![Dashboard](docs/img/dashboard.png)
 
-| | |
-|---|---|
-| ![Surface](docs/img/feat-viz-surface.png) | ![Ball-and-stick](docs/img/feat-viz-ballstick.png) |
-| Van der Waals surface (aspirin)            | 3D ball-and-stick (caffeine)                       |
-| ![Pharmacophore](docs/img/feat-viz-pharmacophore.png) | ![Coordinates](docs/img/feat-coordinates-3d.png) |
-| Pharmacophore features (aspirin)           | 3D Coords with conformer table                     |
-
-### Workspace — cross-tool clipboard
-
-Right-side drawer holds molecules across pages. Click a row to load it into the current page's input, copy a single SMILES, or send it to another tool with one click. Drag to reorder. Header has copy-all and clear.
+A few of the features in action:
 
 | | |
 |---|---|
-| ![Workspace (light)](docs/img/feat-workspace.png) | ![Workspace (dark)](docs/img/feat-workspace-dark.png) |
-| Workspace drawer with four molecules saved        | Same in dark mode                                     |
+| ![Workspace](docs/img/feat-workspace.png) | ![Library picker](docs/img/feat-library-picker.png) |
+| **Workspace** — cross-tool clipboard. Click a row to load the SMILES into the current page's input, copy it, or send it to another tool. Drag to reorder. | **Library picker** — 264 curated molecules across 13 categories, searchable by name / SMILES / synonym. Available next to every SMILES input. |
+| ![Command palette](docs/img/feat-command-palette.png) | ![3D visualization](docs/img/feat-viz-surface.png) |
+| **Command palette** — `⌘K` opens a dropdown that matches both pages and commands. Arrow keys navigate, Enter activates. | **3D visualization** — Van der Waals surfaces, ball-and-stick models, pharmacophore mapping via 3Dmol.js. Style controls update the live viewer. |
 
-### Library picker — 264 curated molecules
-
-Searchable across name, SMILES, synonym. Grouped by category (drugs, solvents, scaffolds, amino acids, sugars, lipids, vitamins, hormones, natural products, polymer monomers, pesticides, fragments, functional-group exemplars, stereochemistry test cases). Available next to every primary SMILES input via the inline "Library" button.
-
-| | |
-|---|---|
-| ![Library picker (light)](docs/img/feat-library-picker.png) | ![Library picker (dark)](docs/img/feat-library-picker-dark.png) |
-| 264 molecules across 13 categories                          | Same in dark mode                                                |
-
-### Command palette
-
-`⌘K` (or click the topbar search) opens a dropdown anchored under the input. Matches both pages and commands; arrow keys navigate, Enter activates. Commands include "Add current SMILES to workspace", "Open workspace", "Copy all workspace SMILES", "Toggle theme", "Toggle density".
+Both light and dark themes ship with WCAG-AA contrast across every page:
 
 | | |
 |---|---|
-| ![Command palette (light)](docs/img/feat-command-palette.png) | ![Command palette (dark)](docs/img/feat-command-palette-dark.png) |
-| Pages + Commands grouped, keyboard hints in footer            | Same in dark mode                                                  |
-
----
-
-## Page screenshots
-
-### Light theme
-
-| | |
-|---|---|
-| ![Dashboard](docs/img/dashboard.png)             | ![Structure](docs/img/structure.png)           |
-| Dashboard — quick analysis + recent + jump tiles | Structure — SMILES ↔ MOL / InChI / SDF / PDB   |
-| ![Descriptors](docs/img/descriptors.png)         | ![Fingerprints](docs/img/fingerprints.png)     |
-| Descriptors — 217+ values per molecule           | Fingerprints — 8 families, single or batch     |
-| ![Similarity](docs/img/similarity.png)           | ![Properties](docs/img/properties.png)         |
-| Similarity — 13 metrics + bulk search + MCS      | Properties — drug-likeness, ADMET, scaffolds   |
-| ![3D Coordinates](docs/img/coordinates.png)      | ![Visualization](docs/img/visualization.png)   |
-| 3D Coords — UFF / MMFF94, conformers, O3A        | Visualization — 2D / 3D / surface / pharm.     |
-| ![Reactions](docs/img/reactions.png)             |                                                |
-| Reactions — SMARTS, library enumeration          |                                                |
-
-### Dark theme
-
-| | |
-|---|---|
-| ![Dashboard (dark)](docs/img/dashboard-dark.png)         | ![Structure (dark)](docs/img/structure-dark.png)         |
-| Dashboard                                                 | Structure                                                |
-| ![Descriptors (dark)](docs/img/descriptors-dark.png)     | ![Fingerprints (dark)](docs/img/fingerprints-dark.png)   |
-| Descriptors                                               | Fingerprints                                             |
-| ![Similarity (dark)](docs/img/similarity-dark.png)       | ![Properties (dark)](docs/img/properties-dark.png)       |
-| Similarity                                                | Properties                                               |
-| ![Coordinates (dark)](docs/img/coordinates-dark.png)     | ![Visualization (dark)](docs/img/visualization-dark.png) |
-| 3D Coords                                                 | Visualization                                            |
-| ![Reactions (dark)](docs/img/reactions-dark.png)         |                                                          |
-| Reactions                                                 |                                                          |
+| ![Properties](docs/img/properties.png) | ![Properties (dark)](docs/img/properties-dark.png) |
+| Properties (light)                     | Properties (dark)                                  |
 
 ---
 

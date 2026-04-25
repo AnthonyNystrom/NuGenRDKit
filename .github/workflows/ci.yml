@@ -26,7 +26,10 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install ruff
-        run: pip install 'ruff==0.5.*'
+        # Pin a current minor — 0.5.* (the original pin) is over a year
+        # old and its rules / format style diverge from anything devs
+        # install today, so files clean locally fail in CI.
+        run: pip install 'ruff==0.15.*'
       - name: ruff check
         run: ruff check .
       - name: ruff format --check
