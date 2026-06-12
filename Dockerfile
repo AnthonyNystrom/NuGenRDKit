@@ -62,12 +62,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:${PATH}"
 
 # Runtime libraries that the wheels link against (no compilers).
+# libxrender1 + libxext6 are required by RDKit's drawing module
+# (rdkit.Chem.Draw.rdMolDraw2D); without them the visualization blueprint
+# fails to import and gunicorn never boots ("libXrender.so.1: cannot open
+# shared object file").
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         libfreetype6 \
         libpng16-16 \
         libjpeg62-turbo \
         libgomp1 \
+        libxrender1 \
+        libxext6 \
         curl \
         git \
  && rm -rf /var/lib/apt/lists/*
